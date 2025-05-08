@@ -13,7 +13,6 @@ class ProductRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val productCollection = firestore.collection("products")
-
     /**
      * Uploads the image to Firebase Storage and saves the product with the image URI as a download URL.
      */
@@ -23,12 +22,11 @@ class ProductRepository {
 
         val productToSave = product.copy(image = imageUrl?.let { Uri.parse(it) })
 
-        // Convert Uri to String before saving to Firestore
         val dataMap = mapOf(
             "id" to productToSave.id,
             "name" to productToSave.name,
-            "salePrice" to productToSave.estimatedTimeMinutes,
-            "purchasePrice" to productToSave.price,
+            "salePrice" to productToSave.salePrice,
+            "purchasePrice" to productToSave.purchasePrice,
             "taxes" to productToSave.taxes,
             "image" to productToSave.image?.toString()
         )
@@ -45,8 +43,8 @@ class ProductRepository {
         val dataMap = mapOf(
             "id" to product.id,
             "name" to product.name,
-            "salePrice" to product.estimatedTimeMinutes,
-            "purchasePrice" to product.price,
+            "salePrice" to product.salePrice,
+            "purchasePrice" to product.purchasePrice,
             "taxes" to product.taxes,
             "image" to product.image?.toString()
         )

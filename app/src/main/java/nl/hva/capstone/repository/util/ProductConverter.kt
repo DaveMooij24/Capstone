@@ -11,8 +11,8 @@ class ProductConverter {
             return try {
                 val id = snapshot.getLong("id") ?: 0L
                 val name = snapshot.getString("name") ?: ""
-                val estimatedTimeMinutes = snapshot.getLong("salePrice")?.toInt()
-                val price = snapshot.getDouble("purchasePrice")
+                val salePrice = snapshot.getDouble("salePrice")
+                val purchasePrice = snapshot.getDouble("purchasePrice")
                 val taxes = snapshot.getLong("taxes")?.toInt()
                 val imageUrl = snapshot.getString("image")
                 val imageUri = imageUrl?.let { Uri.parse(it) }
@@ -20,8 +20,8 @@ class ProductConverter {
                 Product(
                     id = id,
                     name = name,
-                    estimatedTimeMinutes = estimatedTimeMinutes,
-                    price = price,
+                    salePrice = salePrice,
+                    purchasePrice = purchasePrice,
                     taxes = taxes,
                     image = imageUri
                 )

@@ -20,14 +20,14 @@ fun Dialog(
     onClose: () -> Unit,
     onSave: (Service) -> Unit,
     title: String,
-    errorMessage: String? = null // <-- new parameter
+    errorMessage: String? = null
 ) {
     val name = remember { mutableStateOf(service?.name ?: "") }
     val estimatedTimeMinutes = remember { mutableStateOf(service?.estimatedTimeMinutes?.toString() ?: "") }
     val price = remember { mutableStateOf(service?.price?.toString() ?: "") }
     val taxes = remember { mutableStateOf(service?.taxes?.toString() ?: "") }
 
-    PopupDialog(title = title, onClose = onClose, errorMessage = errorMessage) { // pass down
+    PopupDialog(title = title, onClose = onClose, errorMessage = errorMessage) {
         InputTextField(Icons.Filled.ContentCut, "Naam", textState = name)
         Spacer(modifier = Modifier.height(10.dp))
         InputNumericTextField(

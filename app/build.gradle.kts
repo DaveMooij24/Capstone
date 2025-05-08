@@ -56,6 +56,11 @@ dependencies {
     implementation(libs.androidx.espresso.core)
     implementation(libs.androidx.palette.ktx)
     implementation(libs.firebase.storage.ktx)
+    implementation(libs.firebase.appcheck.debug)
+    implementation(libs.volley)
+    implementation(libs.play.services.base)
+    implementation(libs.play.services.base)
+    implementation(libs.play.services.base)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -66,4 +71,6 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
 
     implementation (libs.converter.gson)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
 }
