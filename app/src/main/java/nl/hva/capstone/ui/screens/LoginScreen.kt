@@ -1,7 +1,11 @@
 package nl.hva.capstone.ui.screens
 
+import android.annotation.SuppressLint
+import android.content.ContextWrapper
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,20 +17,26 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.unit.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.text.*
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
+import androidx.fragment.app.FragmentActivity
+import kotlinx.coroutines.launch
 
 import nl.hva.capstone.ui.components.forms.*
 import nl.hva.capstone.ui.components.login.KapsalonBanner
+import nl.hva.capstone.utils.*
 import nl.hva.capstone.viewmodel.LoginViewModel
 
 
+@SuppressLint("ContextCastToActivity")
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    val context = LocalContext.current
     val username = remember { mutableStateOf("") }
+    val savedUsername = remember { mutableStateOf("") }
+
     val password = remember { mutableStateOf("") }
 
     val usernameFocusRequester = remember { FocusRequester() }
@@ -35,6 +45,24 @@ fun LoginScreen(
     val loginSuccess by viewModel.loginSuccess.observeAsState()
     val errorMessage by viewModel.errorMessage.observeAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+
+    val context = LocalContext.current
+    val activity = remember(context) {
+        generateSequence(context) { (it as? ContextWrapper)?.baseContext }
+            .filterIsInstance<FragmentActivity>()
+            .firstOrNull()
+    }
+
+    val biometricHelperState = remember { mutableStateOf<BiometricHelper?>(null) }
+
+    val dataStoreManager = remember { DataStoreManager(context) }
+
+    LaunchedEffect(Unit) {
+        savedUsername.value = dataStoreManager.getUsername() ?: ""
+        username.value = savedUsername.value
+    }
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
@@ -50,6 +78,30 @@ fun LoginScreen(
         if (loginSuccess == true) {
             viewModel.resetLoginState()
             onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(activity, savedUsername.value) {
+        if (savedUsername.value.isNotEmpty()) {
+            activity?.let {
+                val helper = BiometricHelper(
+                    context = context,
+                    activity = it,
+                    onAuthSuccess = {
+                        scope.launch {
+                            viewModel.biometricLogin()
+                        }
+                    },
+                    onAuthError = { error ->
+                        Log.e("BiometricHelper", "Auth error: $error")
+                    }
+                )
+                biometricHelperState.value = helper
+
+                if (helper.canAuthenticate()) {
+                    helper.showBiometricPrompt()
+                }
+            }
         }
     }
 
@@ -116,8 +168,38 @@ fun LoginScreen(
                 },
                 maxWidthFraction = 0.8f
             )
-        }
 
+            if (savedUsername.value.isNotEmpty()) {
+
+                biometricHelperState.value?.let { biometricHelper ->
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.BottomEnd
+                    ) {
+                        IconButton(
+                            onClick = { biometricHelper.showBiometricPrompt() },
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    color = Color.White,
+                                    shape = CircleShape
+                                )
+                                .border(1.dp, Color.Gray, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Fingerprint,
+                                contentDescription = "Biometrisch inloggen",
+                                tint = Color.Black
+                            )
+                        }
+                    }
+                }
+            }
+        }
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier

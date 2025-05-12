@@ -10,13 +10,14 @@ import kotlinx.coroutines.*
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import nl.hva.capstone.ui.components.navigation.BottomNavBar
 import nl.hva.capstone.ui.components.navigation.SideNavBar
 import nl.hva.capstone.ui.components.snackbar.SnackbarComponent
-import nl.hva.capstone.viewmodel.ServiceViewModel
+import nl.hva.capstone.utils.*
 
 @Composable
 fun HomePageLayout(
@@ -27,6 +28,18 @@ fun HomePageLayout(
 ) {
     val scope = rememberCoroutineScope()
     var isSidebarOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+
+    fun handleLogout(){
+        scope.launch {
+            dataStoreManager.clearLogin()
+            isSidebarOpen = false
+            navController.navigate("login") {
+                popUpTo("home") { inclusive = true }
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -79,16 +92,13 @@ fun HomePageLayout(
         ) {
             SideNavBar(navController = navController,
                 onLogoutClick = {
-                    scope.launch {
-                        isSidebarOpen = false
-                        navController.navigate("login") {
-                            popUpTo("home") { inclusive = true }
-                        }
-                    }
+                    handleLogout()
                 })
         }
     }
 }
+
+
 
 
 

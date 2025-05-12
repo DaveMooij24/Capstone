@@ -3,12 +3,13 @@ package nl.hva.capstone
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.*
 import com.google.firebase.FirebaseApp
 import nl.hva.capstone.ui.screens.*
 import nl.hva.capstone.ui.theme.CapstoneTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)

@@ -69,8 +69,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.material.icons.extended)
-
     implementation (libs.converter.gson)
     implementation("io.coil-kt:coil-compose:2.5.0")
-
+    implementation ("androidx.biometric:biometric:1.2.0-alpha05")
+    implementation ("androidx.datastore:datastore-preferences:1.0.0")
 }
