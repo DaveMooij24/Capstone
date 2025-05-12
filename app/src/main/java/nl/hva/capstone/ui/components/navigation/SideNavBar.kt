@@ -82,15 +82,19 @@ fun SideNavBar(navController: NavController, onLogoutClick: () -> Unit) {
 
 @Composable
 fun DrawerItem(icon: ImageVector, title: String, onClick: () -> Unit = {}) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .clickable { onClick() }
+            .height(56.dp)
+            .clickable { onClick() },
+        contentAlignment = Alignment.CenterStart
     ) {
-        Icon(icon, contentDescription = title, tint = Color.White)
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(text = title, fontSize = 18.sp, color = Color.White)
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = title, tint = Color.White)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(text = title, fontSize = 18.sp, color = Color.White)
+        }
     }
 }

@@ -13,9 +13,7 @@ class ProductRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val productCollection = firestore.collection("products")
-    /**
-     * Uploads the image to Firebase Storage and saves the product with the image URI as a download URL.
-     */
+
     suspend fun saveProductWithImage(product: Product): Product {
         val imageUri = product.image
         val imageUrl = imageUri?.let { uploadImageToFirebase(it) }

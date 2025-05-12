@@ -13,7 +13,8 @@ import androidx.compose.ui.unit.*
 fun FormButton(
     text: String,
     onClick: () -> Unit,
-    maxWidthFraction: Float = 1f
+    maxWidthFraction: Float = 1f,
+    height: Dp = 56.dp
 ) {
     Button(
         onClick = onClick,
@@ -21,7 +22,7 @@ fun FormButton(
         shape = RoundedCornerShape(32.dp),
         modifier = Modifier
             .fillMaxWidth(maxWidthFraction)
-            .height(56.dp)
+            .height(height)
     ) {
         Text(
             text = text,

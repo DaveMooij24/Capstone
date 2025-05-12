@@ -33,23 +33,14 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun saveProduct(product: Product) {
-        viewModelScope.launch {
-            try {
-                repository.saveProduct(product)
-                _productSaved.value = true
-                _error.value = null
-            } catch (e: Exception) {
-                _productSaved.value = false
-                _error.value = "Error saving product: ${e.localizedMessage}"
-            }
-        }
-    }
-
     fun saveProductWithImage(product: Product) {
         viewModelScope.launch {
             try {
-                repository.saveProductWithImage(product)
+                if (product.image == null) {
+                    repository.saveProduct(product)
+                } else {
+                    repository.saveProductWithImage(product)
+                }
                 _productSaved.value = true
                 _error.value = null
             } catch (e: Exception) {
