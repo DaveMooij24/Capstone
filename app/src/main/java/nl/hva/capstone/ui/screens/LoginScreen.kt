@@ -185,15 +185,15 @@ fun LoginScreen(
                             modifier = Modifier
                                 .size(56.dp)
                                 .background(
-                                    color = Color.White,
+                                    color = Color(0xFF184B4E),
                                     shape = CircleShape
                                 )
-                                .border(1.dp, Color.Gray, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Fingerprint,
                                 contentDescription = "Biometrisch inloggen",
-                                tint = Color.Black
+                                tint = Color.White
+
                             )
                         }
                     }
