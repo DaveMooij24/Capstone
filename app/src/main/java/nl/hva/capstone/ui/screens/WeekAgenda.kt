@@ -21,7 +21,7 @@ import java.util.*
 @SuppressLint("NewApi")
 @Composable
 fun WeekAgenda(navController: NavController) {
-    var selectedTab by remember { mutableStateOf("Dag planning") }
+    var selectedTab by remember { mutableStateOf("Week planning") }
 
     val appointmentViewModel: AppointmentViewModel = viewModel()
     val clientViewModel: ClientViewModel = viewModel()
@@ -44,7 +44,7 @@ fun WeekAgenda(navController: NavController) {
     val startDateAsDate =  remember {
         Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
-    val endDate = remember { Date.from(today.plusDays(6).atTime(23, 59).atZone(ZoneId.systemDefault()).toInstant()) }
+    val endDate = remember { Date.from(startDate.plusDays(6).atTime(23, 59).atZone(ZoneId.systemDefault()).toInstant()) }
     val monthName = startDateAsDate.toInstant()
         .atZone(ZoneId.systemDefault())
         .month
@@ -96,7 +96,8 @@ fun WeekAgenda(navController: NavController) {
                     showDialog = true
                 },
                 navController = navController,
-                startDate = startDate)
+                startDate = startDate,
+                selectedTab = selectedTab)
         }
 
         if (showDialog) {

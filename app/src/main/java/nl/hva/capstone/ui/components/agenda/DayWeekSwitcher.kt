@@ -14,15 +14,15 @@ fun DayWeekSwitcher(selectedTab: String, onTabSelected: (String) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .background(Color(0xFFE0E0E0))
-            .padding(8.dp),
+            .background(Color.White)
+            .padding(1.dp),
         horizontalArrangement = Arrangement.Center
     ) {
         listOf("Dag planning", "Week planning").forEach { label ->
             Button(
                 onClick = { onTabSelected(label) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (selectedTab == label) Color(0xFF40D6C0) else Color.LightGray
+                    containerColor = if (selectedTab == label) Color(0xFF1F4E4D) else Color(0xFF40D6C0)
                 ),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.padding(horizontal = 8.dp)
@@ -31,4 +31,10 @@ fun DayWeekSwitcher(selectedTab: String, onTabSelected: (String) -> Unit) {
             }
         }
     }
+    Box(
+        modifier = Modifier
+            .height(1.dp)
+            .fillMaxWidth()
+            .background(Color.Black)
+    )
 }
