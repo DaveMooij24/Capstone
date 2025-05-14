@@ -74,7 +74,9 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                     title = it.name,
                     actions = listOf(
                         TopBarAction(Icons.Filled.CalendarToday, "Calendar") {},
-                        TopBarAction(Icons.Filled.Search, "Search") {}
+                        TopBarAction(Icons.Filled.Search, "Search") {
+                            navController.navigate("search")
+                        }
                     )
                 )
             }

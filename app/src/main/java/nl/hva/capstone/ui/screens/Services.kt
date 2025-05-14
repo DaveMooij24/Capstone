@@ -58,11 +58,9 @@ fun Services(navController: NavController) {
                             showDialog = true
                         }
                     ),
-                    TopBarAction(
-                        icon = Icons.Default.Search,
-                        contentDescription = "Search",
-                        onClick = {  }
-                    )
+                    TopBarAction(Icons.Filled.Search, "Search") {
+                        navController.navigate("search")
+                    }
                 )
             )
         }

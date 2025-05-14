@@ -32,6 +32,11 @@ class MainActivity : FragmentActivity() {
                 composable("klanten") { Clients(navController)}
                 composable("producten") { Products(navController)}
                 composable("behandelingen") { Services(navController) }
+
+                composable("search") {
+                    SearchPage(navController)
+                }
+
             }
         }
     }

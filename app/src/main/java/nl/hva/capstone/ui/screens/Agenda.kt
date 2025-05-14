@@ -51,10 +51,22 @@ fun Agenda(navController: NavController) {
     }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    val monthName = startDateAsDate.toInstant()
-        .atZone(ZoneId.systemDefault())
-        .month
-        .getDisplayName(TextStyle.FULL, Locale("nl"))
+    val locale = Locale("nl")
+
+    val startMonth = startDate.month
+        .getDisplayName(TextStyle.FULL, locale)
+        .replaceFirstChar { it.titlecase(locale) }
+
+    val endMonth = startDate.plusDays(6).month
+        .getDisplayName(TextStyle.FULL, locale)
+        .replaceFirstChar { it.titlecase(locale) }
+    
+    val monthName = if (startMonth != endMonth) {
+        "$startMonth / $endMonth"
+    } else {
+        startMonth
+    }
+
 
     LaunchedEffect(Unit) {
         clientViewModel.fetchClients()
@@ -80,7 +92,9 @@ fun Agenda(navController: NavController) {
                     TopBarAction(Icons.Filled.CalendarToday, "Calendar") {
                         showDatePicker = true
                     },
-                    TopBarAction(Icons.Filled.Search, "Search") {}
+                    TopBarAction(Icons.Filled.Search, "Search") {
+                        navController.navigate("search")
+                    }
                 )
             )
         }
