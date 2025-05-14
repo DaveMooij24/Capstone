@@ -18,14 +18,14 @@ class MainActivity : FragmentActivity() {
             val navController = rememberNavController()
 
             NavHost(navController, startDestination = "login") {
-                composable("login") { LoginScreen(onLoginSuccess = { navController.navigate("weekagenda") }) }
+                composable("login") { LoginScreen(onLoginSuccess = { navController.navigate("agenda") }) }
                 composable("actief/{appointmentId}/{clientId}") { backStackEntry ->
                     val appointmentId = backStackEntry.arguments?.getString("appointmentId")
                     val clientId = backStackEntry.arguments?.getString("clientId")
                     Active(navController = navController, appointmentId = appointmentId, clientId = clientId)
                 }
                 composable("actief") { Active(navController = navController, appointmentId = null, clientId = null)}
-                composable("weekagenda") { WeekAgenda(navController) }
+                composable("agenda") { Agenda(navController) }
                 composable("verkopen") { Sales(navController)}
                 composable("inkopen") { Purchases(navController) }
 

@@ -1,6 +1,7 @@
 package nl.hva.capstone.ui.screens
 
 import android.annotation.SuppressLint
+import android.app.DatePickerDialog
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.*
@@ -9,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import nl.hva.capstone.ui.components.agenda.*
@@ -20,7 +22,7 @@ import java.util.*
 
 @SuppressLint("NewApi")
 @Composable
-fun WeekAgenda(navController: NavController) {
+fun Agenda(navController: NavController) {
     var selectedTab by remember { mutableStateOf("Week planning") }
 
     val appointmentViewModel: AppointmentViewModel = viewModel()
@@ -39,12 +41,16 @@ fun WeekAgenda(navController: NavController) {
     val services by serviceViewModel.serviceList.observeAsState(emptyList())
     val appointments by appointmentViewModel.appointmentList.observeAsState(emptyList())
 
-    val today = remember { LocalDate.now() }
-    val startDate = today
-    val startDateAsDate =  remember {
+    var startDate by remember { mutableStateOf(LocalDate.now()) }
+
+    val startDateAsDate = remember(startDate) {
         Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
     }
-    val endDate = remember { Date.from(startDate.plusDays(6).atTime(23, 59).atZone(ZoneId.systemDefault()).toInstant()) }
+    val endDate = remember(startDate) {
+        Date.from(startDate.plusDays(6).atTime(23, 59).atZone(ZoneId.systemDefault()).toInstant())
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
+
     val monthName = startDateAsDate.toInstant()
         .atZone(ZoneId.systemDefault())
         .month
@@ -71,7 +77,9 @@ fun WeekAgenda(navController: NavController) {
             TopBar(
                 title = monthName,
                 actions = listOf(
-                    TopBarAction(Icons.Filled.CalendarToday, "Calendar") {},
+                    TopBarAction(Icons.Filled.CalendarToday, "Calendar") {
+                        showDatePicker = true
+                    },
                     TopBarAction(Icons.Filled.Search, "Search") {}
                 )
             )
@@ -113,5 +121,25 @@ fun WeekAgenda(navController: NavController) {
                 services = services
             )
         }
+
+        if (showDatePicker) {
+            val context = LocalContext.current
+            val today = LocalDate.now()
+            DatePickerDialog(
+                context,
+                { _, year, month, dayOfMonth ->
+                    startDate = LocalDate.of(year, month + 1, dayOfMonth)
+                    appointmentViewModel.fetchAppointmentsBetween(
+                        Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                        Date.from(startDate.plusDays(6).atTime(23, 59).atZone(ZoneId.systemDefault()).toInstant())
+                    )
+                    showDatePicker = false
+                },
+                startDate.year,
+                startDate.monthValue - 1,
+                startDate.dayOfMonth
+            ).show()
+        }
+
     }
 }

@@ -38,7 +38,7 @@ fun BottomNavBar(
         ) {
             NavItem(Icons.Filled.CheckCircle, "Actief", activeItemLabel == "Actief") { onItemClick("actief") }
             Dash()
-            NavItem(Icons.Filled.DateRange, "Planning", activeItemLabel == "Planning") { onItemClick("weekagenda") }
+            NavItem(Icons.Filled.DateRange, "Planning", activeItemLabel == "Planning") { onItemClick("agenda") }
             Dash()
             NavItem(Icons.Filled.AccountBox, "Verkopen", activeItemLabel == "Verkopen") { onItemClick("verkopen") }
             Dash()
