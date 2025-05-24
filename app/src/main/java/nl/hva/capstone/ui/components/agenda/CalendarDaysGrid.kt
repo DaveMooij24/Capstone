@@ -1,6 +1,7 @@
 package nl.hva.capstone.ui.components.agenda
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -13,6 +14,7 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import nl.hva.capstone.data.model.Appointment
 import nl.hva.capstone.data.model.Client
+import nl.hva.capstone.data.model.Service
 import java.time.*
 import java.time.format.TextStyle
 import java.util.*
@@ -22,6 +24,7 @@ import java.util.*
 fun CalendarDaysGrid(
     appointments: List<Appointment>,
     clients: List<Client>,
+    services: List<Service>,
     onTimeSlotClick: (String, Int, Int) -> Unit,
     navController: NavController,
     startDate: LocalDate,
@@ -35,7 +38,6 @@ fun CalendarDaysGrid(
         date to label
     }
     val isSingleDay = numberOfDays == 1
-
 
     val isTodayVisible = days.any { it.first == today }
     val verticalScrollState = rememberScrollState()
@@ -91,6 +93,7 @@ fun CalendarDaysGrid(
                 days = days,
                 appointments = appointments,
                 clients = clients,
+                services = services,
                 navController = navController,
                 onTimeSlotClick = onTimeSlotClick,
                 verticalScrollState = verticalScrollState,
@@ -143,6 +146,7 @@ fun CalendarGrid(
     days: List<Pair<LocalDate, String>>,
     appointments: List<Appointment>,
     clients: List<Client>,
+    services: List<Service>,
     navController: NavController,
     onTimeSlotClick: (String, Int, Int) -> Unit,
     verticalScrollState: ScrollState,
@@ -164,7 +168,8 @@ fun CalendarGrid(
                     clients = clients,
                     navController = navController,
                     onTimeSlotClick = onTimeSlotClick,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    services = services
                 )
             }
         }
@@ -184,7 +189,8 @@ fun CalendarGrid(
                             clients = clients,
                             navController = navController,
                             onTimeSlotClick = onTimeSlotClick,
-                            modifier = Modifier.width(120.dp)
+                            modifier = Modifier.width(120.dp),
+                            services = services
                         )
                     }
                 }
@@ -226,45 +232,69 @@ fun CalendarDayColumn(
     clients: List<Client>,
     navController: NavController,
     onTimeSlotClick: (String, Int, Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    services: List<Service>
 ) {
-    val minutesOfDay = (7 * 60)..(22 * 60) step 15
+    val startMinuteOfDay = 7 * 60 // 07:00
+    val endMinuteOfDay = 22 * 60  // 22:00
+    val minuteHeight = 3.6.dp // 15 min * 3.6.dp = 54.dp
+
+    val minutesOfDay = startMinuteOfDay until endMinuteOfDay
     val today = remember { LocalDate.now() }
     val isToday = date == today
     val offset = rememberCurrentTimeOffset()
 
+    val occupiedSlots = mutableSetOf<Pair<Int, Int>>() // hour to minute
+
+    appointments.forEach { appointment ->
+        val startTime = appointment.dateTime.toDate()
+            .toInstant()
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+
+        if (startTime.toLocalDate() == date) {
+            val service = services.find { it.id == appointment.serviceId }
+            val duration = service?.estimatedTimeMinutes ?: 15
+
+            repeat(duration+1) { i ->
+                val slotTime = startTime.toLocalTime().plusMinutes(i.toLong())
+
+                occupiedSlots.add(slotTime.hour to slotTime.minute)
+            }
+        }
+    }
+
+
     Box(modifier = modifier) {
         Column(modifier = Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-            minutesOfDay.forEach { totalMinutes ->
-                val hour = totalMinutes / 60
-                val minute = totalMinutes % 60
+            minutesOfDay.forEach { minuteOfDay ->
+                val hour = minuteOfDay / 60
+                val minute = minuteOfDay % 60
+
+                val isOccupied = (hour to minute) in occupiedSlots
 
                 val matchedAppointment = appointments.find {
-                    val appointmentDateTime = it.dateTime.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    appointmentDateTime.toLocalDate() == date &&
-                            appointmentDateTime.hour == hour &&
-                            appointmentDateTime.minute == minute
+                    val start = it.dateTime.toDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+                    start.toLocalDate() == date &&
+                            start.hour == hour &&
+                            start.minute == minute
                 }
 
-                val lineWidthFraction = when (minute) {
-                    0 -> 0.75f
-                    30 -> 0.62f
-                    else -> 0.5f
+                when {
+                    matchedAppointment != null -> {
+                        val client = clients.find { it.id == matchedAppointment.clientId }
+                        val service = services.find { it.id == matchedAppointment.serviceId }
+
+                        if (client != null && service != null) {
+                            AppointmentBlock(matchedAppointment, client, service, navController)
+                        }
+                    }
+                    !isOccupied -> {
+                        EmptyTimeSlot(date, hour, minute, onTimeSlotClick, minuteHeight)
+                    }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .height(1.dp)
-                        .fillMaxWidth(lineWidthFraction)
-                        .background(Color(0xFF40D6C0))
-                        .clickable { onTimeSlotClick(date.toString(), hour, minute) }
-                )
-
-                matchedAppointment?.let { appointment ->
-                    clients.find { it.id == appointment.clientId }
-                        ?.let { client -> AppointmentBlock(appointment, client, navController) }
-                } ?: EmptyTimeSlot(date, hour, minute, onTimeSlotClick)
             }
+
         }
 
         CurrentTimeLineWithOffset(offset, if (isToday) Color(0xFF40D6C0) else Color(0xFF40D6C0).copy(alpha = 0.6f))
@@ -295,8 +325,8 @@ fun CurrentTimeLineWithOffset(offset: Dp, color: Color) {
 fun getOffsetFromStartOfDay(): Dp {
     val now = LocalTime.now()
     val minutesFromStart = ((now.hour * 60 + now.minute) - (7 * 60)).coerceAtLeast(0)
-    val slotHeightPer15Min = 55f
-    return (minutesFromStart / 15f * slotHeightPer15Min).dp
+    val slotHeightPerMinute = 3.6f
+    return (minutesFromStart * slotHeightPerMinute).dp
 }
 
 @Composable

@@ -15,6 +15,8 @@ class AppointmentConverter {
                 val dateTime = snapshot.getTimestamp("dateTime") ?: Timestamp.now()
                 val description = snapshot.getString("description") ?: ""
                 val notes = snapshot.getString("notes") ?: ""
+                val checkedOut = snapshot.getBoolean("checkedOut") ?: false
+
 
                 Appointment(
                     id = id,
@@ -22,7 +24,8 @@ class AppointmentConverter {
                     serviceId = serviceId,
                     dateTime = dateTime,
                     description = description,
-                    notes = notes
+                    notes = notes,
+                    checkedOut = checkedOut
                 )
             } catch (e: Exception) {
                 Log.e("AppointmentConverter", "Error converting snapshot to Appointment: ${e.message}")

@@ -9,5 +9,6 @@ data class Appointment(
     @SerializedName("serviceId") val serviceId: Long,
     @SerializedName("dateTime") val dateTime: Timestamp,
     @SerializedName("description") val description: String,
-    @SerializedName("notes") val notes: String
+    @SerializedName("notes") val notes: String,
+    @SerializedName("checkedOut") val checkedOut: Boolean = false
 )

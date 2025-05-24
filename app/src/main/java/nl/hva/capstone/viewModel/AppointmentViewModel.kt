@@ -1,6 +1,7 @@
-package nl.hva.capstone.viewmodel
+package nl.hva.capstone.viewModel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -85,6 +86,13 @@ class AppointmentViewModel(application: Application) : AndroidViewModel(applicat
             }
         }
     }
+
+    fun updateAppointmentCheckoutStatus(appointmentId: Long, checkedOut: Boolean) {
+        viewModelScope.launch {
+            repository.updateAppointmentCheckoutStatus(appointmentId, checkedOut)
+        }
+    }
+
 
     fun resetState() {
         _appointmentSaved.value = false

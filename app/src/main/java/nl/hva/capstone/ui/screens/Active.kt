@@ -1,5 +1,6 @@
 package nl.hva.capstone.ui.screens
 
+import android.util.Log
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
@@ -15,10 +16,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import nl.hva.capstone.data.model.*
 import nl.hva.capstone.ui.components.forms.*
-import nl.hva.capstone.ui.components.popupDialog.PopupDialog
+import nl.hva.capstone.ui.components.active.*
 import nl.hva.capstone.ui.components.topbar.*
-import nl.hva.capstone.viewmodel.*
+import nl.hva.capstone.viewModel.*
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -35,10 +38,16 @@ sealed class DialogType {
 fun Active(navController: NavController, appointmentId: String?, clientId: String?) {
     var activeDialog by remember { mutableStateOf<DialogType?>(null) }
 
+    // Existing ViewModel initializations
     val appointmentViewModel: AppointmentViewModel = viewModel()
     val clientViewModel: ClientViewModel = viewModel()
     val serviceViewModel: ServiceViewModel = viewModel()
+    val productViewModel: ProductViewModel = viewModel()
+    val appointmentProductViewModel: AppointmentProductViewModel = viewModel()
 
+
+    val products by productViewModel.productList.observeAsState(emptyList())
+    val appointmentProducts by appointmentProductViewModel.products.observeAsState(emptyList())
     val client by clientViewModel.client.observeAsState()
     val appointment by appointmentViewModel.appointment.observeAsState()
     val services by serviceViewModel.serviceList.observeAsState(emptyList())
@@ -51,11 +60,17 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         } else if (appointmentId == null && clientId == null) {
             appointmentViewModel.fetchMostRecentAppointment()
         }
+
+        serviceViewModel.fetchService()
+        productViewModel.fetchProducts()
     }
 
     LaunchedEffect(appointment) {
         if (appointment != null && initialClientId == null) {
             initialClientId = appointment?.clientId.toString()
+        }
+        if (appointment != null) {
+            appointmentProductViewModel.fetchProductsForAppointment(appointment!!.id)
         }
     }
 
@@ -64,6 +79,27 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
             clientViewModel.fetchClientById(it)
         }
     }
+
+    val calculatedTotalAmount = remember(appointmentProducts, appointment, services) {
+        var subTotal = 0.0
+        appointmentProducts.forEach { product ->
+            Log.e("price", product.salePrice!!.toString())
+
+            subTotal += product.salePrice
+        }
+        appointment?.serviceId?.let { currentServiceId ->
+            val matchedService = services.find { service -> service.id == currentServiceId }
+            matchedService?.let {
+                Log.e("price", it.price!!.toString())
+                subTotal += it.price
+            }
+        }
+        val dutchLocale = Locale("nl", "NL")
+        val currencyFormatter = NumberFormat.getCurrencyInstance(dutchLocale)
+        currencyFormatter.format(subTotal)
+    }
+
+
 
     HomePageLayout(
         activeItemLabel = "Actief",
@@ -143,48 +179,123 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-
                         FormButton(text = "Afrekenen", onClick = {
                             activeDialog = DialogType.Payment
-                        }, height = 40.dp)
+                        }, height = 40.dp, modifier = Modifier.fillMaxWidth(1f))
 
                         Spacer(modifier = Modifier.height(12.dp))
 
                         FormButton(text = "Toekomstige afspraken", onClick = {
                             activeDialog = DialogType.FutureAppointments
-                        }, height = 40.dp)
+                        }, height = 40.dp, modifier = Modifier.fillMaxWidth(1f))
                         Spacer(modifier = Modifier.height(12.dp))
 
                         FormButton(text = "Afspraak geschiedenis", onClick = {
                             activeDialog = DialogType.AppointmentHistory
-                        }, height = 40.dp)
+                        }, height = 40.dp, modifier = Modifier.fillMaxWidth(1f))
                     }
                 }
             }
         }
+        var showCheckout by remember { mutableStateOf(false) }
+        var showProductOverview by remember { mutableStateOf(false) }
+        var showAddProduct by remember { mutableStateOf(false) }
+        var showConfirmPrint by remember { mutableStateOf(false) }
+        var showConfirmDelete by remember { mutableStateOf<Product?>(null) }
 
-        activeDialog?.let { dialogType ->
-            val (title, contentText) = when (dialogType) {
-                is DialogType.Payment -> "Afrekenen" to "Betaalgegevens of afrekeninformatie hier tonen."
-                is DialogType.FutureAppointments -> "Toekomstige afspraken" to "Overzicht van toekomstige afspraken."
-                is DialogType.AppointmentHistory -> "Afspraak geschiedenis" to "Lijst van eerdere afspraken."
-            }
+        var soortAfspraak = remember { mutableStateOf("") }
+        var omschrijving = remember { mutableStateOf("") }
+        var watIsErGedaan = remember { mutableStateOf("") }
+        val selectedProduct = remember { mutableStateOf<Product?>(null) }
 
-            PopupDialog(
-                title = title,
-                onClose = { activeDialog = null },
-                errorMessage = null
-            ) {
-                Text(
-                    text = contentText,
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                FormButton(text = "Sluiten", onClick = {
-                    activeDialog = null
-                }, height = 40.dp)
-            }
+
+        if (activeDialog == DialogType.Payment) {
+            showCheckout = true
+            activeDialog = null
+        }
+
+        // Actual dialogs shown below
+        if (showCheckout) {
+            AfrekenenDialog(
+                onClose = { showCheckout = false },
+                onCheckout = { showConfirmPrint = true},
+                onShowProducts = { showProductOverview = true },
+                extraProductsCount = appointmentProducts.size,
+                totalAmount = calculatedTotalAmount,
+                soortAfspraak = soortAfspraak,
+                omschrijving = omschrijving,
+                watIsErGedaan = watIsErGedaan
+            )
+        }
+
+        if (showProductOverview) {
+            ProductenInzichtDialog(
+                products = appointmentProducts,
+                onClose = { showProductOverview = false },
+                onAddClick = { showAddProduct = true },
+                onDeleteProduct = { product ->
+                    showConfirmDelete = product
+                }
+            )
+        }
+
+        if (showAddProduct) {
+            ProductToevoegenDialog(
+                products = products,
+                selectedProduct = selectedProduct,
+                onClose = { showAddProduct = false },
+                onAdd = {
+                    Log.e("Appointment", selectedProduct.value.toString())
+                    selectedProduct.value?.let { selected ->
+                        appointment?.let { appointment ->
+                            appointmentProductViewModel.addProductToAppointment(
+                                appointmentId = appointment.id,
+                                productId = selected.id
+                            )
+                        }
+                        selectedProduct.value = null
+                        showAddProduct = false
+                    }
+                }
+            )
+        }
+
+        if (showConfirmPrint) {
+            ConfirmDialog(
+                title = "Bon uitprinten",
+                onConfirm = {
+                    // Implement print logic
+                    showConfirmPrint = false
+                    appointment?.let { currentAppointment ->
+                        appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
+                    }
+                },
+                onCancel = {
+                    showConfirmPrint = false
+                    appointment?.let { currentAppointment ->
+                        appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
+                    }
+                },
+            )
+        }
+
+        showConfirmDelete?.let { productToConfirmDelete ->
+            ConfirmDialog(
+                title = "Product verwijderen",
+                message = "Weet u zeker dat u '${productToConfirmDelete.name}' wilt verwijderen?",
+                onConfirm = {
+                    appointment?.let { currentAppointment ->
+                        appointmentProductViewModel.deleteProductFromAppointment(
+                            appointmentId = currentAppointment.id,
+                            productId = productToConfirmDelete.id
+                        )
+                    }
+                    showConfirmDelete = null
+                },
+                onCancel = {
+                    showConfirmDelete = null
+                }
+            )
         }
     }
 }
@@ -209,8 +320,3 @@ fun InfoRow(icon: ImageVector, text: String) {
         )
     }
 }
-
-
-
-
-

@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import nl.hva.capstone.ui.components.forms.*
 import nl.hva.capstone.ui.components.login.KapsalonBanner
 import nl.hva.capstone.utils.*
-import nl.hva.capstone.viewmodel.LoginViewModel
+import nl.hva.capstone.viewModel.LoginViewModel
 
 
 @SuppressLint("ContextCastToActivity")
@@ -166,7 +166,7 @@ fun LoginScreen(
                         e.printStackTrace()
                     }
                 },
-                maxWidthFraction = 0.8f
+                modifier = Modifier.fillMaxWidth(.8f)
             )
 
             if (savedUsername.value.isNotEmpty()) {

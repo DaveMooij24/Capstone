@@ -10,7 +10,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
 import nl.hva.capstone.data.model.*
-import nl.hva.capstone.viewmodel.ClientViewModel
+import nl.hva.capstone.viewModel.ClientViewModel
 
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel

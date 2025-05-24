@@ -13,22 +13,21 @@ import androidx.compose.ui.unit.*
 fun FormButton(
     text: String,
     onClick: () -> Unit,
-    maxWidthFraction: Float = 1f,
+    modifier: Modifier = Modifier,
     height: Dp = 56.dp
 ) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF184B4E)),
         shape = RoundedCornerShape(32.dp),
-        modifier = Modifier
-            .fillMaxWidth(maxWidthFraction)
+        modifier = modifier
             .height(height)
     ) {
         Text(
             text = text,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = Color.White,
         )
     }
 }

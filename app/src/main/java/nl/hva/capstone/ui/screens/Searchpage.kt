@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import nl.hva.capstone.data.model.*
-import nl.hva.capstone.viewmodel.*
+import nl.hva.capstone.viewModel.*
 import nl.hva.capstone.ui.components.clients.Card as ClientCard
 import nl.hva.capstone.ui.components.products.Card as ProductCard
 import nl.hva.capstone.ui.components.services.Card as ServiceCard
@@ -44,12 +44,69 @@ fun SearchPage(navController: NavController) {
     val services by serviceViewModel.serviceList.observeAsState(emptyList())
     val purchases by purchaseViewModel.purchaseList.observeAsState(emptyList())
 
+    var selectedClient by remember { mutableStateOf<Client?>(null) }
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    var selectedService by remember { mutableStateOf<Service?>(null) }
+    var selectedPurchase by remember { mutableStateOf<Purchase?>(null) }
+
+    var showClientDialog by remember { mutableStateOf(false) }
+    var showProductDialog by remember { mutableStateOf(false) }
+    var showServiceDialog by remember { mutableStateOf(false) }
+    var showPurchaseDialog by remember { mutableStateOf(false) }
+
+    val clientErrorMessage by clientViewModel.error.observeAsState(null)
+    val productErrorMessage by productViewModel.error.observeAsState(null)
+    val serviceErrorMessage by serviceViewModel.error.observeAsState(null)
+    val purchaseErrorMessage by purchaseViewModel.error.observeAsState(null)
+
+    val clientSaved by clientViewModel.clientSaved.observeAsState(false)
+    val productSaved by productViewModel.productSaved.observeAsState(false)
+    val serviceSaved by serviceViewModel.serviceSaved.observeAsState(false)
+    val purchaseSaved by purchaseViewModel.purchaseSaved.observeAsState(false)
+
     LaunchedEffect(Unit) {
         clientViewModel.fetchClients()
         productViewModel.fetchProducts()
         serviceViewModel.fetchService()
         purchaseViewModel.fetchPurchases()
     }
+
+    LaunchedEffect(clientSaved) {
+        if (clientSaved) {
+            showClientDialog = false
+            selectedClient = null
+            clientViewModel.fetchClients()
+            clientViewModel.resetState()
+        }
+    }
+
+    LaunchedEffect(productSaved) {
+        if (productSaved) {
+            showProductDialog = false
+            selectedProduct = null
+            productViewModel.fetchProducts()
+            productViewModel.resetState()
+        }
+    }
+
+    LaunchedEffect(serviceSaved) {
+        if (serviceSaved) {
+            showServiceDialog = false
+            selectedService = null
+            serviceViewModel.fetchService()
+            serviceViewModel.resetState()
+        }
+    }
+
+    LaunchedEffect(purchaseSaved) {
+        if (purchaseSaved) {
+            showPurchaseDialog = false
+            selectedPurchase = null
+            purchaseViewModel.fetchPurchases()
+            purchaseViewModel.resetState()
+        }
+    }
+
 
     val filteredResults = remember(query.text, clients, products, services, purchases) {
         val q = query.text.trim().lowercase()
@@ -186,7 +243,10 @@ fun SearchPage(navController: NavController) {
                                     client?.let {
                                         ClientCard(
                                             client = it,
-                                            onClick = { /* TODO: Handle click */ }
+                                            onClick = {
+                                                selectedClient = it
+                                                showClientDialog = true
+                                            }
                                         )
                                     }
                                 }
@@ -196,7 +256,10 @@ fun SearchPage(navController: NavController) {
                                     product?.let {
                                         ProductCard(
                                             product = it,
-                                            onClick = { /* TODO: Handle click */ }
+                                            onClick = {
+                                                selectedProduct = it
+                                                showProductDialog = true
+                                            }
                                         )
                                     }
                                 }
@@ -206,7 +269,10 @@ fun SearchPage(navController: NavController) {
                                     service?.let {
                                         ServiceCard(
                                             service = it,
-                                            onClick = { /* TODO: Handle click */ }
+                                            onClick = {
+                                                selectedService = it
+                                                showServiceDialog = true
+                                            }
                                         )
                                     }
                                 }
@@ -216,7 +282,10 @@ fun SearchPage(navController: NavController) {
                                     purchase?.let {
                                         PurchaseCard(
                                             purchase = it,
-                                            onClick = { /* TODO: Handle click */ }
+                                            onClick = {
+                                                selectedPurchase = it
+                                                showPurchaseDialog = true
+                                            }
                                         )
                                     }
                                 }
@@ -226,6 +295,70 @@ fun SearchPage(navController: NavController) {
                 }
             }
         }
+        if (showProductDialog) {
+            nl.hva.capstone.ui.components.products.Dialog(
+                product = selectedProduct,
+                onClose = {
+                    showProductDialog = false
+                    selectedProduct = null
+                    productViewModel.resetState()
+                },
+                onSave = { product ->
+                    productViewModel.saveProductWithImage(product)
+                },
+                errorMessage = productErrorMessage,
+                title = if (selectedProduct == null) "Product toevoegen" else "Product bewerken"
+            )
+        }
+
+        if (showClientDialog) {
+            nl.hva.capstone.ui.components.clients.Dialog(
+                client = selectedClient,
+                onClose = {
+                    showClientDialog = false
+                    selectedClient = null
+                    clientViewModel.resetState()
+                },
+                onSave = { client ->
+                    clientViewModel.saveClient(client)
+                },
+                errorMessage = clientErrorMessage,
+                title = if (selectedClient == null) "Klant toevoegen" else "Klant bewerken"
+            )
+        }
+
+        if (showServiceDialog) {
+            nl.hva.capstone.ui.components.services.Dialog(
+                service = selectedService,
+                onClose = {
+                    showServiceDialog = false
+                    selectedService = null
+                    serviceViewModel.resetState()
+                },
+                onSave = { service ->
+                    serviceViewModel.saveService(service)
+                },
+                errorMessage = serviceErrorMessage,
+                title = if (selectedService == null) "Behandeling toevoegen" else "Behandeling bewerken"
+            )
+        }
+
+        if (showPurchaseDialog) {
+            nl.hva.capstone.ui.components.purchases.Dialog(
+                purchase = selectedPurchase,
+                onClose = {
+                    showPurchaseDialog = false
+                    selectedPurchase = null
+                    purchaseViewModel.resetState()
+                },
+                onSave = { purchase ->
+                    purchaseViewModel.savePurchaseWithImage(purchase)
+                },
+                errorMessage = purchaseErrorMessage,
+                title = if (selectedPurchase == null) "Inkoop toevoegen" else "Inkoop bewerken"
+            )
+        }
+
     }
 }
 

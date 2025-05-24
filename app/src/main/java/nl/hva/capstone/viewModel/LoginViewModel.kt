@@ -1,4 +1,4 @@
-package nl.hva.capstone.viewmodel
+package nl.hva.capstone.viewModel
 
 import android.app.Application
 import android.util.Log

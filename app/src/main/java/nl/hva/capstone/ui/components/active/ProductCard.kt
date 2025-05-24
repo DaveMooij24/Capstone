@@ -1,10 +1,12 @@
-package nl.hva.capstone.ui.components.products
+package nl.hva.capstone.ui.components.active
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -21,15 +23,14 @@ import coil.request.ImageRequest
 import nl.hva.capstone.data.model.Product
 
 @Composable
-fun Card(
+fun ProductCard(
     product: Product,
-    onClick: () -> Unit
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(0.95f)
-            .padding(8.dp)
-            .clickable { onClick() },
+            .fillMaxWidth()
+            .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF0EFEF))
@@ -39,24 +40,8 @@ fun Card(
                 .fillMaxWidth()
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            val painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(LocalContext.current)
-                    .data(product.image)
-                    .build()
-            )
-            Image(
-                painter = painter,
-                contentDescription = "Product Image",
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -71,11 +56,15 @@ fun Card(
                 )
             }
 
-            Icon(
-                imageVector = Icons.Default.Visibility,
-                contentDescription = "View Icon",
-                tint = Color.Black
-            )
+            Row {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Verwijder product",
+                        tint = Color.Black
+                    )
+                }
+            }
         }
     }
 }

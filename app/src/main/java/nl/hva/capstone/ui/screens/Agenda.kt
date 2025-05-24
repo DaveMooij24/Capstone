@@ -15,7 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import nl.hva.capstone.ui.components.agenda.*
 import nl.hva.capstone.ui.components.topbar.*
-import nl.hva.capstone.viewmodel.*
+import nl.hva.capstone.viewModel.*
 import java.time.*
 import java.time.format.TextStyle
 import java.util.*
@@ -111,6 +111,7 @@ fun Agenda(navController: NavController) {
             CalendarDaysGrid(
                 appointments = appointments,
                 clients = clients,
+                services = services,
                 onTimeSlotClick = { date: String, hour: Int, minute: Int ->
                     selectedDate = date
                     selectedHour = hour

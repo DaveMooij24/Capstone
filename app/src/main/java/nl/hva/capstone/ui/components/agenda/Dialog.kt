@@ -95,7 +95,8 @@ fun Dialog(
                         serviceId = serviceId,
                         dateTime = com.google.firebase.Timestamp(Timestamp.valueOf(fullTimestamp)),
                         description = description.value,
-                        notes = notes.value
+                        notes = notes.value,
+                        checkedOut = false
                     )
 
                     onSave(appointment)
