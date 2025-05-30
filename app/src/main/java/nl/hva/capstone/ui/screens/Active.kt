@@ -109,7 +109,9 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                 TopBar(
                     title = it.name,
                     actions = listOf(
-                        TopBarAction(Icons.Filled.CalendarToday, "Calendar") {},
+                        TopBarAction(Icons.Filled.Edit, "Calendar") {
+                                activeDialog = DialogType.Payment
+                        },
                         TopBarAction(Icons.Filled.Search, "Search") {
                             navController.navigate("search")
                         }

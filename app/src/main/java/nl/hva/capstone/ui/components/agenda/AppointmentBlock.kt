@@ -24,7 +24,7 @@ fun AppointmentBlock(
     navController: NavController
 ) {
     val durationMinutes = service.estimatedTimeMinutes ?: 15
-    val heightDp = ((durationMinutes+1) * 3.6f).dp
+    val heightDp = ((durationMinutes+1.5) * 3.6f).dp
 
     val start = appointment.dateTime.toDate()
     val endTime = start.toInstant().plusSeconds(durationMinutes * 60L)

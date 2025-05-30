@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
@@ -15,6 +16,7 @@ import kotlinx.coroutines.delay
 import nl.hva.capstone.data.model.Appointment
 import nl.hva.capstone.data.model.Client
 import nl.hva.capstone.data.model.Service
+import nl.hva.capstone.ui.components.agenda.utils.rememberCurrentTimeOffset
 import java.time.*
 import java.time.format.TextStyle
 import java.util.*
@@ -43,15 +45,24 @@ fun CalendarDaysGrid(
     val verticalScrollState = rememberScrollState()
     val horizontalScrollState = rememberScrollState()
 
+    val density = LocalDensity.current
+
+
     LaunchedEffect(isTodayVisible) {
         if (isTodayVisible) {
             val now = LocalTime.now()
-            val totalMinutesSinceStart = ((now.hour * 60 + now.minute) - (7 * 60)).coerceAtLeast(0)
-            val slotHeightPx = 55
-            val scrollOffset = 1400 + totalMinutesSinceStart * (slotHeightPx / 15f)
-            verticalScrollState.scrollTo(scrollOffset.toInt())
+            val totalMinutesSinceStart = ((now.hour * 60 + now.minute) - (7.75 * 60))
+            val slotHeightPerMinuteDp = 3.6f
+
+            // Convert Dp to Px
+            val scrollOffsetPx = with(density) {
+                (totalMinutesSinceStart * slotHeightPerMinuteDp).dp.toPx()
+            }
+
+            verticalScrollState.scrollTo(scrollOffsetPx.toInt())
         }
     }
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.height(55.dp)) {
@@ -81,14 +92,12 @@ fun CalendarDaysGrid(
 
         Row(modifier = Modifier.fillMaxSize()) {
             HourLabelsColumn(verticalScrollState, isTodayVisible)
-
             Box(
                 modifier = Modifier
                     .width(1.dp)
                     .fillMaxHeight()
                     .background(Color.Black)
             )
-
             CalendarGrid(
                 days = days,
                 appointments = appointments,
@@ -100,44 +109,6 @@ fun CalendarDaysGrid(
                 horizontalScrollState = horizontalScrollState
             )
         }
-    }
-}
-
-@SuppressLint("NewApi")
-@Composable
-fun HourLabelsColumn(scrollState: ScrollState, isTodayVisible: Boolean) {
-    val hours = (7..22).map { String.format("%02d:00", it) }
-    val hourHeight = 110.dp
-    val offset = rememberCurrentTimeOffset()
-
-    Box(
-        modifier = Modifier
-            .offset(y = (-5).dp) // Apply negative top spacing
-            .verticalScroll(scrollState)
-    ) {
-        Column {
-            hours.forEachIndexed { index, hour ->
-                val isLastHour = index == hours.lastIndex
-                Column(modifier = Modifier.width(69.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier.height(hourHeight).fillMaxWidth(),
-                        contentAlignment = Alignment.TopCenter
-                    ) {
-                        Text(text = hour, fontSize = 10.sp, color = Color.Gray)
-                    }
-                    if (!isLastHour) {
-                        Box(
-                            modifier = Modifier.height(hourHeight).fillMaxWidth(),
-                            contentAlignment = Alignment.TopCenter
-                        ) {
-                            Text(text = "${hour.substringBefore(":")}:30", fontSize = 10.sp, color = Color.Gray)
-                        }
-                    }
-                }
-                Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(Color.Black))
-            }
-        }
-        CurrentTimeLineTime(offset, if (isTodayVisible) Color(0xFF40D6C0) else Color(0xFF40D6C0).copy(alpha = 0.6f))
     }
 }
 
@@ -154,7 +125,7 @@ fun CalendarGrid(
 ) {
     val isSingleDay = days.size == 1
     val minutesOfDay = (7 * 60)..(22 * 60) step 15
-    val gridHeight = (minutesOfDay.count() * 54).dp
+    val gridHeight = (minutesOfDay.count() * 3.6 * 15).dp
 
     if (isSingleDay) {
         Column(modifier = Modifier.verticalScroll(verticalScrollState)) {
@@ -264,7 +235,6 @@ fun CalendarDayColumn(
         }
     }
 
-
     Box(modifier = modifier) {
         Column(modifier = Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
             minutesOfDay.forEach { minuteOfDay ->
@@ -294,50 +264,7 @@ fun CalendarDayColumn(
                     }
                 }
             }
-
         }
-
         CurrentTimeLineWithOffset(offset, if (isToday) Color(0xFF40D6C0) else Color(0xFF40D6C0).copy(alpha = 0.6f))
     }
-}
-
-@Composable
-fun CurrentTimeLineTime(offset: Dp, color: Color) {
-    Box(
-        modifier = Modifier
-            .padding(top = 5.dp + offset)
-            .width(70.dp)
-            .height(2.dp)
-            .background(color)
-    )
-}
-
-@Composable
-fun CurrentTimeLineWithOffset(offset: Dp, color: Color) {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(top = offset)
-    ) {
-        Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(color))
-    }
-}
-
-@SuppressLint("NewApi")
-fun getOffsetFromStartOfDay(): Dp {
-    val now = LocalTime.now()
-    val minutesFromStart = ((now.hour * 60 + now.minute) - (7 * 60)).coerceAtLeast(0)
-    val slotHeightPerMinute = 3.6f
-    return (minutesFromStart * slotHeightPerMinute).dp
-}
-
-@Composable
-fun rememberCurrentTimeOffset(): Dp {
-    var offset by remember { mutableStateOf(getOffsetFromStartOfDay()) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            offset = getOffsetFromStartOfDay()
-            delay(60 * 1000L)
-        }
-    }
-    return offset
 }
