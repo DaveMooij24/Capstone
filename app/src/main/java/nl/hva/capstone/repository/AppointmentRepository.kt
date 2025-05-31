@@ -22,6 +22,13 @@ class AppointmentRepository {
             .await()
     }
 
+    suspend fun deleteAppointment(appointment: Appointment) {
+        appointmentCollection
+            .document(appointment.id.toString())
+            .delete()
+            .await()
+    }
+
     suspend fun getAppointmentById(id: Long): Appointment? {
         val document = appointmentCollection.document(id.toString()).get().await()
         return AppointmentConverter.fromSnapshot(document)
@@ -38,6 +45,17 @@ class AppointmentRepository {
         val snapshot = appointmentCollection
             .whereGreaterThanOrEqualTo("dateTime", startTimestamp)
             .whereLessThanOrEqualTo("dateTime", endTimestamp)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            AppointmentConverter.fromSnapshot(doc)
+        }
+    }
+
+    suspend fun getAppointmentsForClient(id: Long): List<Appointment> {
+        val snapshot = appointmentCollection
+            .whereEqualTo("clientId", id)
             .get()
             .await()
 

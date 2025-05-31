@@ -1,4 +1,4 @@
-package nl.hva.capstone.ui.components.active
+package nl.hva.capstone.ui.components.active.dialogs
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text

@@ -16,9 +16,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.google.firebase.Timestamp
 import nl.hva.capstone.data.model.*
 import nl.hva.capstone.ui.components.forms.*
-import nl.hva.capstone.ui.components.active.*
+import nl.hva.capstone.ui.components.active.dialogs.*
 import nl.hva.capstone.ui.components.topbar.*
 import nl.hva.capstone.viewModel.*
 import java.text.NumberFormat
@@ -48,6 +49,8 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
 
     val products by productViewModel.productList.observeAsState(emptyList())
     val appointmentProducts by appointmentProductViewModel.products.observeAsState(emptyList())
+    val appointments by appointmentViewModel.appointmentList.observeAsState(emptyList())
+
     val client by clientViewModel.client.observeAsState()
     val appointment by appointmentViewModel.appointment.observeAsState()
     val services by serviceViewModel.serviceList.observeAsState(emptyList())
@@ -203,16 +206,46 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         var showProductOverview by remember { mutableStateOf(false) }
         var showAddProduct by remember { mutableStateOf(false) }
         var showConfirmPrint by remember { mutableStateOf(false) }
-        var showConfirmDelete by remember { mutableStateOf<Product?>(null) }
+        var showFuture by remember { mutableStateOf(false) }
+        var showPast by remember { mutableStateOf(false) }
+        var showAppointmentFuture by remember { mutableStateOf(false) }
+        var showAppointmentPast by remember { mutableStateOf(false) }
+
+        var showConfirmDeleteAppointment by remember { mutableStateOf<Appointment?>(null) }
+        var showConfirmDeleteProduct by remember { mutableStateOf<Product?>(null) }
+
 
         var soortAfspraak = remember { mutableStateOf("") }
         var omschrijving = remember { mutableStateOf("") }
         var watIsErGedaan = remember { mutableStateOf("") }
         val selectedProduct = remember { mutableStateOf<Product?>(null) }
+        val selectedAppointment = remember { mutableStateOf<Appointment?>(null) }
 
 
         if (activeDialog == DialogType.Payment) {
             showCheckout = true
+            activeDialog = null
+        }
+
+        if (activeDialog == DialogType.FutureAppointments) {
+            LaunchedEffect(initialClientId) {
+                initialClientId?.toLongOrNull()?.let {
+                    appointmentViewModel.fetchAppointmentsForClient(it)
+                }
+            }
+
+            showFuture = true
+            activeDialog = null
+        }
+
+        if (activeDialog == DialogType.AppointmentHistory) {
+            LaunchedEffect(initialClientId) {
+                initialClientId?.toLongOrNull()?.let {
+                    appointmentViewModel.fetchAppointmentsForClient(it)
+                }
+            }
+
+            showPast = true
             activeDialog = null
         }
 
@@ -230,13 +263,58 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
             )
         }
 
+        if(showFuture){
+            val futureAppointments = remember(appointments) {
+                val currentDate = Date()
+                appointments.filter { appointment ->
+                    val appointmentDate = (appointment.dateTime as? Timestamp)?.toDate()
+                    appointmentDate != null && appointmentDate.after(currentDate)
+                }.sortedBy { (it.dateTime as? Timestamp)?.toDate() ?: Date(Long.MAX_VALUE) }
+            }
+
+            FutureAppointmentsDialog(
+                appointments = futureAppointments,
+                onClose = { showFuture = false },
+                onViewAppointment = { appointment ->
+                    selectedAppointment.value = appointment
+
+                    showAppointmentFuture = true
+                    activeDialog = null
+                }
+            )
+        }
+
+        if(showPast){
+            val pastAppointments = remember(appointments) {
+                val currentDate = Date()
+                appointments.filter { appointment ->
+                    val appointmentDate =
+                        (appointment.dateTime as? Timestamp)?.toDate()
+                    appointmentDate != null && appointmentDate.before(currentDate)
+                }.sortedByDescending {
+                    (it.dateTime as? Timestamp)?.toDate() ?: Date(0)
+                }
+            }
+
+            PastAppointmentsDialog(
+                appointments = pastAppointments,
+                onClose = { showPast = false },
+                onViewAppointment = { appointment ->
+                    selectedAppointment.value = appointment
+
+                    showAppointmentPast = true
+                    activeDialog = null
+                }
+            )
+        }
+
         if (showProductOverview) {
             ProductenInzichtDialog(
                 products = appointmentProducts,
                 onClose = { showProductOverview = false },
                 onAddClick = { showAddProduct = true },
                 onDeleteProduct = { product ->
-                    showConfirmDelete = product
+                    showConfirmDeleteProduct = product
                 }
             )
         }
@@ -247,7 +325,6 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                 selectedProduct = selectedProduct,
                 onClose = { showAddProduct = false },
                 onAdd = {
-                    Log.e("Appointment", selectedProduct.value.toString())
                     selectedProduct.value?.let { selected ->
                         appointment?.let { appointment ->
                             appointmentProductViewModel.addProductToAppointment(
@@ -281,7 +358,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
             )
         }
 
-        showConfirmDelete?.let { productToConfirmDelete ->
+        showConfirmDeleteProduct?.let { productToConfirmDelete ->
             ConfirmDialog(
                 title = "Product verwijderen",
                 message = "Weet u zeker dat u '${productToConfirmDelete.name}' wilt verwijderen?",
@@ -292,11 +369,54 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                             productId = productToConfirmDelete.id
                         )
                     }
-                    showConfirmDelete = null
+                    showConfirmDeleteProduct = null
                 },
                 onCancel = {
-                    showConfirmDelete = null
+                    showConfirmDeleteProduct = null
                 }
+            )
+        }
+
+        showConfirmDeleteAppointment?.let { appointmentToConfirmDelete ->
+            ConfirmDialog(
+                title = "Afspraak verwijderen",
+                message = "Weet u zeker dat u de afspraak op '${appointmentToConfirmDelete.dateTime}' wilt verwijderen?",
+                onConfirm = {
+                    appointmentViewModel.deleteAppointment(appointmentToConfirmDelete)
+                    showConfirmDeleteAppointment = null
+                },
+                onCancel = {
+                    showConfirmDeleteAppointment = null
+                }
+            )
+        }
+
+        if(showAppointmentFuture){
+            AppointmentInsightDialog(
+                onClose = { showAppointmentFuture = false },
+                onSave = { updatedAppointment ->
+                    appointmentViewModel.saveAppointment(updatedAppointment)
+                    showAppointmentFuture = false
+                },
+                onDelete = { appointment ->
+                    showConfirmDeleteAppointment = appointment
+                           },
+                appointment = selectedAppointment.value
+            )
+        }
+
+        if(showAppointmentPast){
+            AppointmentInsightDialog(
+                onClose = { showAppointmentPast = false },
+                onSave = { updatedAppointment ->
+                    appointmentViewModel.saveAppointment(updatedAppointment)
+                    showAppointmentFuture = false
+                },
+                onDelete = { appointment ->
+                    showConfirmDeleteAppointment = appointment
+                },
+                appointment = selectedAppointment.value,
+                showButtons = false
             )
         }
     }

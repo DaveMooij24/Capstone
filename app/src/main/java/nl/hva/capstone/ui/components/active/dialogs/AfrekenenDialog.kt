@@ -1,6 +1,5 @@
-package nl.hva.capstone.ui.components.active
+package nl.hva.capstone.ui.components.active.dialogs
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -12,7 +11,6 @@ import androidx.compose.material.icons.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import nl.hva.capstone.ui.components.forms.FormButton
 import nl.hva.capstone.ui.components.forms.InputTextField
 import nl.hva.capstone.ui.components.popupDialog.PopupDialog

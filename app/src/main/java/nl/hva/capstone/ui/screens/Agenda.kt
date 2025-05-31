@@ -124,13 +124,15 @@ fun Agenda(navController: NavController) {
         }
 
         if (showDialog) {
+            val snappedMinute = (selectedMinute / 15) * 15
+
             Dialog(
                 onClose = { showDialog = false },
                 onSave = { appointment ->
                     appointmentViewModel.saveAppointment(appointment)
                 },
                 defaultDate = selectedDate,
-                defaultTime = String.format("%02d:%02d", selectedHour, selectedMinute),
+                defaultTime = String.format("%02d:%02d", selectedHour, snappedMinute),
                 errorMessage = errorMessage,
                 clients = clients,
                 services = services

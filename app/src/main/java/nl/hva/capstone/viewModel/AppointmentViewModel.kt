@@ -87,12 +87,32 @@ class AppointmentViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun fetchAppointmentsForClient(id: Long) {
+        viewModelScope.launch {
+            try {
+                val appointments = repository.getAppointmentsForClient(id)
+                _appointmentList.value = appointments
+            } catch (e: Exception) {
+                _error.value = "Error fetching appointments: ${e.localizedMessage}"
+            }
+        }
+    }
+
     fun updateAppointmentCheckoutStatus(appointmentId: Long, checkedOut: Boolean) {
         viewModelScope.launch {
             repository.updateAppointmentCheckoutStatus(appointmentId, checkedOut)
         }
     }
 
+    fun deleteAppointment(appointment: Appointment) {
+        viewModelScope.launch {
+            try {
+                repository.deleteAppointment(appointment)
+            } catch (e: Exception) {
+                _error.value = "Fout bij verwijderen: ${e.localizedMessage}"
+            }
+        }
+    }
 
     fun resetState() {
         _appointmentSaved.value = false
