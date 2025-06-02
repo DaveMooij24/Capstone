@@ -7,7 +7,10 @@ import kotlinx.coroutines.launch
 import nl.hva.capstone.data.model.Product
 import nl.hva.capstone.repository.ProductRepository
 
-class ProductViewModel(application: Application) : AndroidViewModel(application) {
+class ProductViewModel(
+    application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : AndroidViewModel(application) {
 
     private val repository = ProductRepository()
 
@@ -24,16 +27,22 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     val error: LiveData<String?> get() = _error
 
     fun fetchProducts() {
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 _productList.value = repository.getProducts()
             } catch (e: Exception) {
                 _error.value = "Error fetching products: ${e.localizedMessage}"
+            } finally {
+                loadingViewModel.disableLoading()
             }
         }
     }
 
     fun saveProductWithImage(product: Product) {
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 if (product.image == null) {
@@ -46,6 +55,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 _productSaved.value = false
                 _error.value = "Error saving product with image: ${e.localizedMessage}"
+            } finally {
+                loadingViewModel.disableLoading()
             }
         }
     }
@@ -53,5 +64,18 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     fun resetState() {
         _productSaved.value = false
         _error.value = null
+    }
+}
+
+class ProductViewModelFactory(
+    private val application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : ViewModelProvider.AndroidViewModelFactory(application) {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ProductViewModel::class.java)) {
+            return ProductViewModel(application, loadingViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

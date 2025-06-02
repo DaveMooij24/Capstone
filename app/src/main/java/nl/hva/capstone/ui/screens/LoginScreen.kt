@@ -20,19 +20,25 @@ import androidx.compose.foundation.text.*
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 
 import nl.hva.capstone.ui.components.forms.*
 import nl.hva.capstone.ui.components.login.KapsalonBanner
 import nl.hva.capstone.utils.*
+import nl.hva.capstone.viewModel.LoadingViewModel
 import nl.hva.capstone.viewModel.LoginViewModel
 
 
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    navController: NavController,
+    loginViewModel: LoginViewModel,
+    loadingViewModel: LoadingViewModel
 ) {
     val username = remember { mutableStateOf("") }
     val savedUsername = remember { mutableStateOf("") }
@@ -42,8 +48,9 @@ fun LoginScreen(
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
 
-    val loginSuccess by viewModel.loginSuccess.observeAsState()
-    val errorMessage by viewModel.errorMessage.observeAsState()
+    val errorMessage by loginViewModel.errorMessage.observeAsState()
+    val loginSuccess by loginViewModel.loginSuccess.observeAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -70,16 +77,16 @@ fun LoginScreen(
                 message = it,
                 duration = SnackbarDuration.Short
             )
-            viewModel.resetLoginState()
+            loginViewModel.resetLoginState()
         }
     }
 
     LaunchedEffect(loginSuccess) {
-        if (loginSuccess == true) {
-            viewModel.resetLoginState()
-            onLoginSuccess()
+        if(loginSuccess == true){
+            navController.navigate("agenda")
         }
     }
+
 
     LaunchedEffect(activity, savedUsername.value) {
         if (savedUsername.value.isNotEmpty()) {
@@ -89,7 +96,7 @@ fun LoginScreen(
                     activity = it,
                     onAuthSuccess = {
                         scope.launch {
-                            viewModel.biometricLogin()
+                            loginViewModel.biometricLogin()
                         }
                     },
                     onAuthError = { error ->
@@ -148,7 +155,7 @@ fun LoginScreen(
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        viewModel.login(username.value, password.value)
+                        loginViewModel.login(username.value, password.value)
                     }
                 ),
                 fillMaxWidthFraction = 0.8f,
@@ -161,7 +168,7 @@ fun LoginScreen(
                 text = "Inloggen",
                 onClick = {
                     try {
-                        viewModel.login(username.value, password.value)
+                        loginViewModel.login(username.value, password.value)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }

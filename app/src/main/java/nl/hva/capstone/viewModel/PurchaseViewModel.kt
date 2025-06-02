@@ -7,7 +7,10 @@ import kotlinx.coroutines.launch
 import nl.hva.capstone.data.model.Purchase
 import nl.hva.capstone.repository.PurchaseRepository
 
-class PurchaseViewModel(application: Application) : AndroidViewModel(application) {
+class PurchaseViewModel(
+    application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : AndroidViewModel(application) {
 
     private val repository = PurchaseRepository()
 
@@ -24,16 +27,22 @@ class PurchaseViewModel(application: Application) : AndroidViewModel(application
     val error: LiveData<String?> get() = _error
 
     fun fetchPurchases() {
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 _purchaseList.value = repository.getPurchases()
             } catch (e: Exception) {
                 _error.value = "Error fetching purchases: ${e.localizedMessage}"
+            } finally {
+                loadingViewModel.disableLoading()
             }
         }
     }
 
     fun savePurchaseWithImage(purchase: Purchase) {
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 if (purchase.image == null) {
@@ -46,6 +55,8 @@ class PurchaseViewModel(application: Application) : AndroidViewModel(application
             } catch (e: Exception) {
                 _purchaseSaved.value = false
                 _error.value = "Error saving purchase with image: ${e.localizedMessage}"
+            } finally {
+                loadingViewModel.disableLoading()
             }
         }
     }
@@ -53,5 +64,18 @@ class PurchaseViewModel(application: Application) : AndroidViewModel(application
     fun resetState() {
         _purchaseSaved.value = false
         _error.value = null
+    }
+}
+
+class PurchaseViewModelFactory(
+    private val application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : ViewModelProvider.AndroidViewModelFactory(application) {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PurchaseViewModel::class.java)) {
+            return PurchaseViewModel(application, loadingViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

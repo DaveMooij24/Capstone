@@ -19,11 +19,9 @@ import nl.hva.capstone.ui.components.topbar.*
 
 
 @Composable
-fun Clients(navController: NavController) {
+fun Clients(navController: NavController, clientViewModel: ClientViewModel) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedClient by remember { mutableStateOf<Client?>(null) }
-
-    val clientViewModel: ClientViewModel = viewModel()
 
     val clientList by clientViewModel.clientList.observeAsState(emptyList())
     val clientSaved by clientViewModel.clientSaved.observeAsState(false)

@@ -34,16 +34,9 @@ fun AppointmentInsightDialog(
     val notes = remember { mutableStateOf(appointment?.notes ?: "") }
 
     PopupDialog(
-        title = "Afspraak Inzicht",
+        title = "Afspraak van $dateTime",
         onClose = onClose
     ) {
-        InputTextField(
-            icon = Icons.Default.DateRange,
-            hint = "Datum",
-            textState = dateTime,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
         InputTextField(
             icon = Icons.Default.Description,
             hint = "Soort afspraak",
@@ -91,12 +84,7 @@ fun AppointmentInsightDialog(
             FormButton(
                 text = "Opslaan",
                 onClick = {
-                    val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.getDefault())
-                    val parsedDate = formatter.parse(dateTime.value)
-                    val firebaseTimestamp = Timestamp(parsedDate!!)
-
                     val updatedAppointment = appointment?.copy(
-                        dateTime = firebaseTimestamp,
                         serviceId = serviceId.value.toLongOrNull() ?: 0L,
                         description = description.value,
                         notes = notes.value

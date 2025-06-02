@@ -5,13 +5,18 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import nl.hva.capstone.utils.*
 import nl.hva.capstone.repository.LoginRepository
 import kotlin.math.log
 
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
+class LoginViewModel(
+    application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : AndroidViewModel(application) {
 
     private val _loginRepository = LoginRepository()
     private val dataStoreManager = DataStoreManager(application.applicationContext)
@@ -36,6 +41,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         }
         val hashedPassword = _loginRepository.hashPassword(password)
 
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 val isValid = _loginRepository.checkCredentials(username, hashedPassword)
@@ -51,7 +58,6 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 _loginSuccess.value = false
                 _errorMessage.value = "Failed to log in: ${e.message}"
             }
-
         }
     }
 
@@ -65,11 +71,30 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     suspend fun biometricLogin() {
-        var isValid = false
-        if(dataStoreManager.getUsername() != null && dataStoreManager.getPassword() != null) {
-            isValid = _loginRepository.checkCredentials(dataStoreManager.getUsername()!!, dataStoreManager.getPassword()!!)
+        loadingViewModel.enableLoading()
+
+        try {
+            var isValid = false
+            if(dataStoreManager.getUsername() != null && dataStoreManager.getPassword() != null) {
+                isValid = _loginRepository.checkCredentials(dataStoreManager.getUsername()!!, dataStoreManager.getPassword()!!)
+            }
+            login(isValid)
+            _errorMessage.value = null
+        } catch (e: Exception) {
+            // Handle errors appropriately (e.g., log or show message)
         }
-        login(isValid)
-        _errorMessage.value = null
+    }
+}
+
+class LoginViewModelFactory(
+    private val application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : ViewModelProvider.AndroidViewModelFactory(application) {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
+            return LoginViewModel(application, loadingViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

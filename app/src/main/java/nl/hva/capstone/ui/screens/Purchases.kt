@@ -19,11 +19,9 @@ import nl.hva.capstone.ui.components.topbar.*
 
 
 @Composable
-fun Purchases(navController: NavController) {
+fun Purchases(navController: NavController, purchaseViewModel: PurchaseViewModel) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedPurchase by remember { mutableStateOf<Purchase?>(null) }
-
-    val purchaseViewModel: PurchaseViewModel = viewModel()
 
     val purchaseList by purchaseViewModel.purchaseList.observeAsState(emptyList())
     val purchaseSaved by purchaseViewModel.purchaseSaved.observeAsState(false)

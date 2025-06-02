@@ -4,12 +4,17 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import nl.hva.capstone.data.model.Service
 import nl.hva.capstone.repository.ServiceRepository
 
-class ServiceViewModel(application: Application) : AndroidViewModel(application) {
+class ServiceViewModel(
+    application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : AndroidViewModel(application) {
 
     private val repository = ServiceRepository()
 
@@ -23,17 +28,23 @@ class ServiceViewModel(application: Application) : AndroidViewModel(application)
     val error: LiveData<String?> get() = _error
 
     fun fetchService() {
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 val services = repository.getServices()
                 _serviceList.value = services
             } catch (e: Exception) {
                 _error.value = "Error fetching services: ${e.localizedMessage}"
+            } finally {
+                loadingViewModel.disableLoading()
             }
         }
     }
 
     fun saveService(service: Service) {
+        loadingViewModel.enableLoading()
+
         viewModelScope.launch {
             try {
                 when {
@@ -66,6 +77,8 @@ class ServiceViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 _serviceSaved.value = false
                 _error.value = "Error saving service: ${e.localizedMessage}"
+            } finally {
+                loadingViewModel.disableLoading()
             }
         }
     }
@@ -76,3 +89,15 @@ class ServiceViewModel(application: Application) : AndroidViewModel(application)
     }
 }
 
+class ServiceViewModelFactory(
+    private val application: Application,
+    private val loadingViewModel: LoadingViewModel
+) : ViewModelProvider.AndroidViewModelFactory(application) {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ServiceViewModel::class.java)) {
+            return ServiceViewModel(application, loadingViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

@@ -31,13 +31,8 @@ data class SearchResult(
 )
 
 @Composable
-fun SearchPage(navController: NavController) {
+fun SearchPage(navController: NavController, clientViewModel: ClientViewModel, productViewModel: ProductViewModel, serviceViewModel: ServiceViewModel, purchaseViewModel: PurchaseViewModel) {
     var query by remember { mutableStateOf(TextFieldValue("")) }
-
-    val clientViewModel: ClientViewModel = viewModel()
-    val productViewModel: ProductViewModel = viewModel()
-    val serviceViewModel: ServiceViewModel = viewModel()
-    val purchaseViewModel: PurchaseViewModel = viewModel()
 
     val clients by clientViewModel.clientList.observeAsState(emptyList())
     val products by productViewModel.productList.observeAsState(emptyList())

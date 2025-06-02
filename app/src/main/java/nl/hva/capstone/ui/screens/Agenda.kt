@@ -22,12 +22,9 @@ import java.util.*
 
 @SuppressLint("NewApi")
 @Composable
-fun Agenda(navController: NavController) {
+fun Agenda(navController: NavController, appointmentViewModel: AppointmentViewModel, clientViewModel: ClientViewModel, serviceViewModel: ServiceViewModel
+) {
     var selectedTab by remember { mutableStateOf("Week planning") }
-
-    val appointmentViewModel: AppointmentViewModel = viewModel()
-    val clientViewModel: ClientViewModel = viewModel()
-    val serviceViewModel: ServiceViewModel = viewModel()
 
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf("") }

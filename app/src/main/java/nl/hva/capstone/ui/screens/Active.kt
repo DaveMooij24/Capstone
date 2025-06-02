@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.firebase.Timestamp
 import nl.hva.capstone.data.model.*
+import nl.hva.capstone.ui.components.LoadingOverlay
 import nl.hva.capstone.ui.components.forms.*
 import nl.hva.capstone.ui.components.active.dialogs.*
 import nl.hva.capstone.ui.components.topbar.*
@@ -36,16 +37,14 @@ sealed class DialogType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Active(navController: NavController, appointmentId: String?, clientId: String?) {
+fun Active(navController: NavController, appointmentId: String?, clientId: String?,
+           appointmentViewModel: AppointmentViewModel,
+           clientViewModel: ClientViewModel,
+           serviceViewModel: ServiceViewModel,
+           productViewModel: ProductViewModel,
+           appointmentProductViewModel: AppointmentProductViewModel
+) {
     var activeDialog by remember { mutableStateOf<DialogType?>(null) }
-
-    // Existing ViewModel initializations
-    val appointmentViewModel: AppointmentViewModel = viewModel()
-    val clientViewModel: ClientViewModel = viewModel()
-    val serviceViewModel: ServiceViewModel = viewModel()
-    val productViewModel: ProductViewModel = viewModel()
-    val appointmentProductViewModel: AppointmentProductViewModel = viewModel()
-
 
     val products by productViewModel.productList.observeAsState(emptyList())
     val appointmentProducts by appointmentProductViewModel.products.observeAsState(emptyList())

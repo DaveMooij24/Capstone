@@ -20,11 +20,10 @@ import nl.hva.capstone.ui.components.topbar.*
 
 
 @Composable
-fun Services(navController: NavController) {
+fun Services(navController: NavController, serviceViewModel: ServiceViewModel) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedService by remember { mutableStateOf<Service?>(null) }
 
-    val serviceViewModel: ServiceViewModel = viewModel()
 
     val serviceList by serviceViewModel.serviceList.observeAsState(emptyList())
     val serviceSaved by serviceViewModel.serviceSaved.observeAsState(false)
