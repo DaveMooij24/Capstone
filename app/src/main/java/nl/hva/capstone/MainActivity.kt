@@ -52,6 +52,11 @@ class MainActivity : FragmentActivity() {
                 factory = PurchaseViewModelFactory(application, loadingViewModel)
             )
 
+            val saleViewModel: SaleViewModel = viewModel(
+                factory = SaleViewModelFactory(application, loadingViewModel)
+            )
+
+
             val serviceViewModel: ServiceViewModel = viewModel(
                 factory = ServiceViewModelFactory(application, loadingViewModel)
             )
@@ -80,7 +85,7 @@ class MainActivity : FragmentActivity() {
                             productViewModel = productViewModel,
                             appointmentProductViewModel = appointmentProductViewModel)}
                         composable("agenda") { Agenda(navController = navController, appointmentViewModel = appointmentViewModel, clientViewModel = clientViewModel, serviceViewModel = serviceViewModel) }
-                        composable("verkopen") { Sales(navController)}
+                        composable("verkopen") { Sale(navController, saleViewModel = saleViewModel)}
                         composable("inkopen") { Purchases(navController, purchaseViewModel = purchaseViewModel) }
                         composable("klanten") { Clients(navController, clientViewModel = clientViewModel)}
                         composable("producten") { Products(navController, productViewModel = productViewModel)}

@@ -4,6 +4,6 @@ import com.google.firebase.Timestamp
 import com.google.gson.annotations.SerializedName
 
 data class Sale(
-    @SerializedName("id") val id: String,
+    @SerializedName("id") val id: Long,
     @SerializedName("dateTime") val dateTime: Timestamp,
 )
