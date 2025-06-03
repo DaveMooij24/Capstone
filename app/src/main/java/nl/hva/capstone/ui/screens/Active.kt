@@ -1,5 +1,6 @@
 package nl.hva.capstone.ui.screens
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,16 +18,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import nl.hva.capstone.data.model.*
 import nl.hva.capstone.ui.components.LoadingOverlay
 import nl.hva.capstone.ui.components.forms.*
 import nl.hva.capstone.ui.components.active.dialogs.*
 import nl.hva.capstone.ui.components.topbar.*
 import nl.hva.capstone.viewModel.*
+import nl.hva.printer.PrinterService
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 
 sealed class DialogType {
     object Payment : DialogType()
@@ -35,6 +42,7 @@ sealed class DialogType {
 }
 
 
+@SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Active(navController: NavController, appointmentId: String?, clientId: String?,
@@ -44,6 +52,8 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
            productViewModel: ProductViewModel,
            appointmentProductViewModel: AppointmentProductViewModel
 ) {
+    val context = LocalContext.current
+
     var activeDialog by remember { mutableStateOf<DialogType?>(null) }
 
     val appointmentSaved by appointmentViewModel.appointmentSaved.observeAsState(false)
@@ -57,8 +67,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
 
     val description = remember { mutableStateOf("") }
     val notes = remember { mutableStateOf("") }
-    val service = remember { mutableStateOf("") }
-    val estimatedMinutes = remember { mutableIntStateOf(30) }
+    val service = remember { mutableStateOf<Service?>(null) }
 
     var initialClientId by remember { mutableStateOf(clientId) }
 
@@ -85,8 +94,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
             description.value = appt.description
             notes.value       = appt.notes
             val match = services.find { it.id == appt.serviceId }
-            service.value = match?.name ?: ""
-            estimatedMinutes.intValue = match?.estimatedTimeMinutes ?: 30
+            service.value = match
         }
     }
 
@@ -116,20 +124,54 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
     val calculatedTotalAmount = remember(appointmentProducts, appointment, services) {
         var subTotal = 0.0
         appointmentProducts.forEach { product ->
-            Log.e("price", product.salePrice!!.toString())
+            subTotal += product.salePrice!!
+        }
 
-            subTotal += product.salePrice
+        service.let {
+            subTotal += it.value?.price ?: 0.0
         }
-        appointment?.serviceId?.let { currentServiceId ->
-            val matchedService = services.find { service -> service.id == currentServiceId }
-            matchedService?.let {
-                Log.e("price", it.price!!.toString())
-                subTotal += it.price
-            }
-        }
+
         val dutchLocale = Locale("nl", "NL")
         val currencyFormatter = NumberFormat.getCurrencyInstance(dutchLocale)
         currencyFormatter.format(subTotal)
+    }
+
+    fun printReceipt(){
+        client?.let { client ->
+            service.value?.let { service ->
+                val printerService = PrinterService(context)
+                val printerIp = "192.168.1.105"
+
+                val currentDate = Date()
+                val nextAppointment = appointments
+                    .mapNotNull { appointment ->
+                        val date = (appointment.dateTime as? Timestamp)?.toDate()
+                        if (date != null && date.after(currentDate)) {
+                            appointment to date
+                        } else {
+                            null
+                        }
+                    }
+                    .sortedBy { it.second }
+                    .firstOrNull()
+                    ?.first
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    printerService.printReceipt(
+                        printerIp = printerIp,
+                        clientName = client.name,
+                        appointmentDateTime = currentDate,
+                        service = service,
+                        products = appointmentProducts,
+                        nextAppointment = nextAppointment?.dateTime?.toDate()
+                    ) { success, message ->
+                        CoroutineScope(Dispatchers.Main).launch {
+                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     HomePageLayout(
@@ -160,7 +202,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                     val dateFormatted = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(appointmentDate)
                     val timeFormatted = SimpleDateFormat("HH:mm", Locale.getDefault()).format(appointmentDate)
                     val endTimeFormatted = SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                        Date(appointmentDate.time + estimatedMinutes.intValue * 60 * 1000)
+                        Date(appointmentDate.time + (service.value?.estimatedTimeMinutes?.times(60) ?: 900) * 1000)
                     )
 
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -184,7 +226,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                         InputTextField(
                             icon = Icons.Default.Description,
                             hint = "Soort afspraak",
-                            textState = service,
+                            textState = mutableStateOf(service.value?.name.orEmpty()),
                             enabled = false
                         )
 
@@ -240,9 +282,6 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         var showConfirmDeleteProduct by remember { mutableStateOf<Product?>(null) }
 
 
-        var soortAfspraak = remember { mutableStateOf("") }
-        var omschrijving = remember { mutableStateOf("") }
-        var watIsErGedaan = remember { mutableStateOf("") }
         val selectedProduct = remember { mutableStateOf<Product?>(null) }
         val selectedAppointment = remember { mutableStateOf<Appointment?>(null) }
 
@@ -270,9 +309,9 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                 onShowProducts = { showProductOverview = true },
                 extraProductsCount = appointmentProducts.size,
                 totalAmount = calculatedTotalAmount,
-                soortAfspraak = soortAfspraak,
-                omschrijving = omschrijving,
-                watIsErGedaan = watIsErGedaan
+                soortAfspraak = remember { mutableStateOf(service.value?.name ?: "")},
+                omschrijving = description,
+                watIsErGedaan = notes
             )
         }
 
@@ -356,10 +395,10 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
             ConfirmDialog(
                 title = "Bon uitprinten",
                 onConfirm = {
-                    // Implement print logic
                     showConfirmPrint = false
                     appointment?.let { currentAppointment ->
                         appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
+//                        printReceipt()
                     }
                 },
                 onCancel = {
@@ -367,9 +406,10 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                     appointment?.let { currentAppointment ->
                         appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
                     }
-                },
+                }
             )
         }
+
 
         showConfirmDeleteProduct?.let { productToConfirmDelete ->
             ConfirmDialog(
@@ -405,11 +445,6 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         }
 
         if(showAppointmentFuture){
-            selectedAppointment?.let { appt ->
-                val match = services.find { it.id == appt.value?.serviceId ?: "" }
-                service.value = match?.name ?: ""
-            }
-
             AppointmentInsightDialog(
                 onClose = { showAppointmentFuture = false },
                 onSave = { updatedAppointment ->
@@ -420,12 +455,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                     showConfirmDeleteAppointment = appointment
                            },
                 appointment = selectedAppointment.value,
-                service = service.also {
-                    it.value = services
-                        .find { svc -> svc.id == selectedAppointment.value?.serviceId }
-                        ?.name
-                        ?: ""
-                }
+                service = remember { mutableStateOf(service.value?.name ?: "")}
             )
         }
 
@@ -441,12 +471,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                 },
                 appointment = selectedAppointment.value,
                 showButtons = false,
-                service = service.also {
-                    it.value = services
-                        .find { svc -> svc.id == selectedAppointment.value?.serviceId }
-                        ?.name
-                        ?: ""
-                }
+                service = remember { mutableStateOf(service.value?.name ?: "")}
             )
         }
     }
@@ -472,3 +497,4 @@ fun InfoRow(icon: ImageVector, text: String) {
         )
     }
 }
+

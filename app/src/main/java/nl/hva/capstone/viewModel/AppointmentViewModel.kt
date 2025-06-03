@@ -115,7 +115,14 @@ class AppointmentViewModel(
         viewModelScope.launch {
             try {
                 val appointments = repository.getAppointmentsForClient(id)
-                _appointmentList.value = appointments
+
+                val currentAppointment = _appointment.value
+                val filteredAppointments = if (currentAppointment != null) {
+                    appointments.filter { it.id != currentAppointment.id }
+                } else {
+                    appointments
+                }
+                _appointmentList.value = filteredAppointments
             } catch (e: Exception) {
                 _error.value = "Error fetching appointments: ${e.localizedMessage}"
             } finally {

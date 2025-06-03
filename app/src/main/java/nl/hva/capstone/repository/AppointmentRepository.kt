@@ -1,12 +1,10 @@
 package nl.hva.capstone.repository
 
-import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import nl.hva.capstone.data.model.Appointment
 import nl.hva.capstone.repository.util.AppointmentConverter
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.Query
 import java.util.Calendar
 import java.util.Date
 
