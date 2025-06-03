@@ -2,6 +2,7 @@ package nl.hva.capstone.viewModel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 import nl.hva.capstone.data.model.Product
@@ -40,16 +41,30 @@ class ProductViewModel(
         }
     }
 
-    fun saveProductWithImage(product: Product) {
+    fun saveProductWithImage(newProduct: Product) {
         loadingViewModel.enableLoading()
 
         viewModelScope.launch {
             try {
-                if (product.image == null) {
-                    repository.saveProduct(product)
+                val existingProduct = _product.value
+                val oldImageUri = existingProduct?.image
+                val newImageUri = newProduct.image
+
+                val isImageChanged = oldImageUri != null &&
+                        newImageUri != null &&
+                        oldImageUri != newImageUri
+
+                if (newImageUri == null) {
+                    repository.saveProduct(newProduct)
                 } else {
-                    repository.saveProductWithImage(product)
+                    if (isImageChanged) {
+                        repository.saveProductWithImage(newProduct)
+                        repository.deleteImage(oldImageUri.toString())
+                    } else {
+                        repository.saveProduct(newProduct)
+                    }
                 }
+
                 _productSaved.value = true
                 _error.value = null
             } catch (e: Exception) {
@@ -59,6 +74,10 @@ class ProductViewModel(
                 loadingViewModel.disableLoading()
             }
         }
+    }
+
+    fun setProduct(product: Product) {
+        _product.value = product
     }
 
     fun resetState() {

@@ -98,6 +98,7 @@ fun Products(navController: NavController, productViewModel: ProductViewModel) {
                 productViewModel.resetState()
             },
             onSave = { product ->
+                selectedProduct?.let { productViewModel.setProduct(it) }
                 productViewModel.saveProductWithImage(product)
             },
             errorMessage = errorMessage,

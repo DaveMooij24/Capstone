@@ -98,6 +98,7 @@ fun Purchases(navController: NavController, purchaseViewModel: PurchaseViewModel
                 purchaseViewModel.resetState()
             },
             onSave = { purchase ->
+                selectedPurchase?.let { purchaseViewModel.setPurchase(it) }
                 purchaseViewModel.savePurchaseWithImage(purchase)
             },
             errorMessage = errorMessage,

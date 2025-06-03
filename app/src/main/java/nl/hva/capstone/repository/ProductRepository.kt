@@ -1,8 +1,10 @@
 package nl.hva.capstone.repository
 
 import android.net.Uri
+import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.storage
 import kotlinx.coroutines.tasks.await
 import nl.hva.capstone.data.model.Product
 import nl.hva.capstone.repository.util.ProductConverter
@@ -63,6 +65,11 @@ class ProductRepository {
         return snapshot.documents.mapNotNull { doc ->
             ProductConverter.fromSnapshot(doc)
         }
+    }
+
+    suspend fun deleteImage(imageUrl: String) {
+        val storageRef = Firebase.storage.getReferenceFromUrl(imageUrl)
+        storageRef.delete().await()
     }
 
     private suspend fun uploadImageToFirebase(uri: Uri): String {

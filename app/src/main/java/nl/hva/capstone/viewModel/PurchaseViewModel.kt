@@ -40,16 +40,26 @@ class PurchaseViewModel(
         }
     }
 
-    fun savePurchaseWithImage(purchase: Purchase) {
+    fun savePurchaseWithImage(newPurchase: Purchase) {
         loadingViewModel.enableLoading()
 
         viewModelScope.launch {
             try {
-                if (purchase.image == null) {
-                    repository.savePurchase(purchase)
+                val existingPurchase = _purchase.value
+                val oldImageUri = existingPurchase?.image
+                val newImageUri = newPurchase.image
+
+                val isImageChanged = oldImageUri != null &&
+                        newImageUri != null &&
+                        oldImageUri != newImageUri
+
+                if (isImageChanged || newImageUri != null) {
+                    repository.savePurchaseWithImage(newPurchase)
+                    repository.deleteImage(oldImageUri.toString())
                 } else {
-                    repository.savePurchaseWithImage(purchase)
+                    repository.savePurchase(newPurchase)
                 }
+
                 _purchaseSaved.value = true
                 _error.value = null
             } catch (e: Exception) {
@@ -59,6 +69,10 @@ class PurchaseViewModel(
                 loadingViewModel.disableLoading()
             }
         }
+    }
+
+    fun setPurchase(purchase: Purchase){
+        _purchase.value = purchase
     }
 
     fun resetState() {

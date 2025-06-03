@@ -9,9 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.*
 import androidx.compose.material.icons.*
 import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.TextStyle
-import com.google.firebase.Timestamp
 import nl.hva.capstone.data.model.Appointment
 import nl.hva.capstone.ui.components.forms.FormButton
 import nl.hva.capstone.ui.components.forms.InputTextField
@@ -26,28 +24,36 @@ fun AppointmentInsightDialog(
     onSave: (Appointment) -> Unit,
     onDelete: (Appointment) -> Unit,
     appointment: Appointment?,
+    service: MutableState<String>,
     showButtons: Boolean = true
 ) {
-    val dateTime = remember { mutableStateOf(appointment?.dateTime.toString() ?: "") }
-    val serviceId = remember { mutableStateOf(appointment?.serviceId.toString() ?: "") }
+    val appointmentDate = appointment?.dateTime?.toDate()
+    val dateFormatted = appointmentDate?.let {
+        SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(
+            it
+        )
+    }
+
     val description = remember { mutableStateOf(appointment?.description ?: "") }
     val notes = remember { mutableStateOf(appointment?.notes ?: "") }
 
     PopupDialog(
-        title = "Afspraak van $dateTime",
+        title = "Afspraak van $dateFormatted",
         onClose = onClose
     ) {
         InputTextField(
             icon = Icons.Default.Description,
             hint = "Soort afspraak",
-            textState = serviceId,
+            textState = service,
+            enabled = false
         )
         Spacer(modifier = Modifier.height(8.dp))
 
         InputTextField(
             icon = Icons.Default.Description,
             hint = "Omschrijving",
-            textState = description
+            textState = description,
+            enabled = showButtons
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -64,7 +70,8 @@ fun AppointmentInsightDialog(
                 unfocusedBorderColor = Color.Transparent,
                 focusedBorderColor = Color.Transparent
             ),
-            textStyle = TextStyle(fontSize = 18.sp)
+            textStyle = TextStyle(fontSize = 18.sp),
+            enabled = showButtons
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -85,7 +92,6 @@ fun AppointmentInsightDialog(
                 text = "Opslaan",
                 onClick = {
                     val updatedAppointment = appointment?.copy(
-                        serviceId = serviceId.value.toLongOrNull() ?: 0L,
                         description = description.value,
                         notes = notes.value
                     )

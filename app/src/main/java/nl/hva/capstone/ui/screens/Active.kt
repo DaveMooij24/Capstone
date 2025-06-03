@@ -46,6 +46,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
 ) {
     var activeDialog by remember { mutableStateOf<DialogType?>(null) }
 
+    val appointmentSaved by appointmentViewModel.appointmentSaved.observeAsState(false)
     val products by productViewModel.productList.observeAsState(emptyList())
     val appointmentProducts by appointmentProductViewModel.products.observeAsState(emptyList())
     val appointments by appointmentViewModel.appointmentList.observeAsState(emptyList())
@@ -53,6 +54,11 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
     val client by clientViewModel.client.observeAsState()
     val appointment by appointmentViewModel.appointment.observeAsState()
     val services by serviceViewModel.serviceList.observeAsState(emptyList())
+
+    val description = remember { mutableStateOf("") }
+    val notes = remember { mutableStateOf("") }
+    val service = remember { mutableStateOf("") }
+    val estimatedMinutes = remember { mutableIntStateOf(30) }
 
     var initialClientId by remember { mutableStateOf(clientId) }
 
@@ -74,11 +80,36 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         if (appointment != null) {
             appointmentProductViewModel.fetchProductsForAppointment(appointment!!.id)
         }
+
+        appointment?.let { appt ->
+            description.value = appt.description
+            notes.value       = appt.notes
+            val match = services.find { it.id == appt.serviceId }
+            service.value = match?.name ?: ""
+            estimatedMinutes.intValue = match?.estimatedTimeMinutes ?: 30
+        }
     }
 
     LaunchedEffect(initialClientId) {
         initialClientId?.toLongOrNull()?.let {
             clientViewModel.fetchClientById(it)
+            appointmentViewModel.fetchAppointmentsForClient(it)
+        }
+    }
+
+    LaunchedEffect(appointmentSaved) {
+        if (appointmentSaved) {
+            if (appointmentId != null) {
+                appointmentViewModel.fetchAppointmentsById(appointmentId.toLong())
+            } else if (appointmentId == null && clientId == null) {
+                appointmentViewModel.fetchMostRecentAppointment()
+            }
+
+            initialClientId
+                ?.toLongOrNull()
+                ?.let { clientLong ->
+                    appointmentViewModel.fetchAppointmentsForClient(clientLong)
+                }
         }
     }
 
@@ -101,8 +132,6 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         currencyFormatter.format(subTotal)
     }
 
-
-
     HomePageLayout(
         activeItemLabel = "Actief",
         navController = navController,
@@ -123,10 +152,6 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            val descriptionState = remember { mutableStateOf("") }
-            val notesState = remember { mutableStateOf("") }
-            val selectedService = remember { mutableStateOf<String?>(null) }
-
             Spacer(modifier = Modifier.height(8.dp))
 
             client?.let { client ->
@@ -135,7 +160,7 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                     val dateFormatted = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(appointmentDate)
                     val timeFormatted = SimpleDateFormat("HH:mm", Locale.getDefault()).format(appointmentDate)
                     val endTimeFormatted = SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                        Date(appointmentDate.time + 30 * 60 * 1000) // assuming 30 min
+                        Date(appointmentDate.time + estimatedMinutes.intValue * 60 * 1000)
                     )
 
                     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -150,24 +175,24 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                         InputTextField(
                             icon = Icons.Default.Description,
                             hint = "Nieuwe omschrijving",
-                            textState = descriptionState
+                            textState = description,
+                            enabled = false
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        DropdownField(
-                            items = services,
-                            labelSelector = { it.name },
-                            onItemSelected = { selectedService.value = it.name },
+                        InputTextField(
+                            icon = Icons.Default.Description,
                             hint = "Soort afspraak",
-                            icon = Icons.Default.ArrowDropDown
+                            textState = service,
+                            enabled = false
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedTextField(
-                            value = notesState.value,
-                            onValueChange = { notesState.value = it },
+                            value = notes.value,
+                            onValueChange = { notes.value = it },
                             placeholder = { Text("Wat is er gedaan?") },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -178,7 +203,8 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedBorderColor = Color.Transparent
                             ),
-                            textStyle = TextStyle(fontSize = 18.sp)
+                            textStyle = TextStyle(fontSize = 18.sp),
+                            enabled = false
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -227,23 +253,11 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         }
 
         if (activeDialog == DialogType.FutureAppointments) {
-            LaunchedEffect(initialClientId) {
-                initialClientId?.toLongOrNull()?.let {
-                    appointmentViewModel.fetchAppointmentsForClient(it)
-                }
-            }
-
             showFuture = true
             activeDialog = null
         }
 
         if (activeDialog == DialogType.AppointmentHistory) {
-            LaunchedEffect(initialClientId) {
-                initialClientId?.toLongOrNull()?.let {
-                    appointmentViewModel.fetchAppointmentsForClient(it)
-                }
-            }
-
             showPast = true
             activeDialog = null
         }
@@ -391,6 +405,11 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         }
 
         if(showAppointmentFuture){
+            selectedAppointment?.let { appt ->
+                val match = services.find { it.id == appt.value?.serviceId ?: "" }
+                service.value = match?.name ?: ""
+            }
+
             AppointmentInsightDialog(
                 onClose = { showAppointmentFuture = false },
                 onSave = { updatedAppointment ->
@@ -400,7 +419,13 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                 onDelete = { appointment ->
                     showConfirmDeleteAppointment = appointment
                            },
-                appointment = selectedAppointment.value
+                appointment = selectedAppointment.value,
+                service = service.also {
+                    it.value = services
+                        .find { svc -> svc.id == selectedAppointment.value?.serviceId }
+                        ?.name
+                        ?: ""
+                }
             )
         }
 
@@ -415,7 +440,13 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                     showConfirmDeleteAppointment = appointment
                 },
                 appointment = selectedAppointment.value,
-                showButtons = false
+                showButtons = false,
+                service = service.also {
+                    it.value = services
+                        .find { svc -> svc.id == selectedAppointment.value?.serviceId }
+                        ?.name
+                        ?: ""
+                }
             )
         }
     }

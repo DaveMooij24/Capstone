@@ -25,16 +25,18 @@ fun InputTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     fillMaxWidthFraction: Float = 1f,
-    cornerRadius: Dp = 10.dp
+    cornerRadius: Dp = 10.dp,
+    enabled: Boolean = true
 ) {
     OutlinedTextField(
         value = textState.value,
-        onValueChange = { textState.value = it },
+        onValueChange = { if (enabled) textState.value = it },
         placeholder = { Text(hint) },
         leadingIcon = { Icon(icon, contentDescription = hint) },
         singleLine = true,
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
         shape = RoundedCornerShape(cornerRadius),
+        enabled = enabled,
         colors = TextFieldDefaults.outlinedTextFieldColors(
             containerColor = Color(0xFFEDEDED),
             unfocusedBorderColor = Color.Transparent,

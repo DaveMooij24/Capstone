@@ -299,6 +299,7 @@ fun SearchPage(navController: NavController, clientViewModel: ClientViewModel, p
                     productViewModel.resetState()
                 },
                 onSave = { product ->
+                    selectedProduct?.let { productViewModel.setProduct(it) }
                     productViewModel.saveProductWithImage(product)
                 },
                 errorMessage = productErrorMessage,
@@ -347,6 +348,7 @@ fun SearchPage(navController: NavController, clientViewModel: ClientViewModel, p
                     purchaseViewModel.resetState()
                 },
                 onSave = { purchase ->
+                    selectedPurchase?.let { purchaseViewModel.setPurchase(it) }
                     purchaseViewModel.savePurchaseWithImage(purchase)
                 },
                 errorMessage = purchaseErrorMessage,

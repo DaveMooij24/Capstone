@@ -13,7 +13,7 @@ import androidx.compose.ui.window.DialogProperties
 fun LoadingOverlay(isLoading: Boolean) {
     if (isLoading) {
         Dialog(
-            onDismissRequest = {}, 
+            onDismissRequest = {},
             properties = DialogProperties(
                 usePlatformDefaultWidth = false,
                 decorFitsSystemWindows = false
