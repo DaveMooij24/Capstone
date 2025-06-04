@@ -2,16 +2,11 @@ package nl.hva.printer
 
 import android.content.Context
 import android.util.Log
-import com.epson.epos2.Epos2Exception
 import com.epson.epos2.printer.Printer
 import com.epson.epos2.printer.PrinterStatusInfo
 import com.epson.epos2.printer.ReceiveListener
-import com.google.firebase.Timestamp
 import kotlinx.coroutines.*
-import nl.hva.capstone.data.model.Product
-import nl.hva.capstone.data.model.Sale
 import nl.hva.capstone.data.model.SaleInformation
-import nl.hva.capstone.data.model.Service
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -112,7 +107,7 @@ class PrinterService(private val context: Context) : ReceiveListener {
 
             val taxLow = totalLow / 109 * 9
             val taxHigh = totalHigh / 121 * 21
-            val taxTotal = totalLow + totalHigh
+            val taxTotal = taxLow + taxHigh
 
             val taxLowFormatted = String.format("%.2f", taxLow)
             val taxHighFormatted = String.format("%.2f", taxHigh)
@@ -123,23 +118,21 @@ class PrinterService(private val context: Context) : ReceiveListener {
 
             mPrinter?.addText("\n")
             if(taxLowFormatted != "0,00"){
-                mPrinter?.addText("  BTW 9%     : $taxLowFormatted\n")
+                mPrinter?.addText("  BTW 9%     : € $taxLowFormatted\n")
             }
-            if(taxLowFormatted != "0,00"){
-                mPrinter?.addText("  BTW 21%    : $taxHighFormatted\n")
+            if(taxHighFormatted != "0,00"){
+                mPrinter?.addText("  BTW 21%    : € $taxHighFormatted\n")
             }
-            mPrinter?.addText("  BTW Totaal : $taxTotalFormatted\n")
+            mPrinter?.addText("  BTW Totaal : € $taxTotalFormatted\n")
             mPrinter?.addText(formatLine("TOTAAL:", "€ $totalFormatted"))
             mPrinter?.addText("\n")
-            mPrinter?.addText(formatLine("Per pin voldaan", totalFormatted))
+            mPrinter?.addText(formatLine("Per pin voldaan", "€ $totalFormatted"))
             mPrinter?.addText("\n")
 
             if (nextAppointment != null) {
                 val dutchFormatter = SimpleDateFormat("EEEE dd MMMM yyyy 'om' HH:mm 'uur'", Locale("nl", "NL"))
                 val formattedDate = dutchFormatter.format(nextAppointment)
                 mPrinter?.addText(" Uw volgende afspraak:\n $formattedDate\n\n")
-
-
             } else {
                 mPrinter?.addText(" Uw volgende afspraak:\n Geen toekomstige afspraak\n\n")
             }

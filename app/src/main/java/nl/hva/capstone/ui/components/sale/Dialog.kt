@@ -30,7 +30,6 @@ fun Dialog(
     title: String
 ) {
     PopupDialog(title = title, onClose = onClose, errorMessage = errorMessage) {
-        Log.e("Sale", sale.toString())
         // Receipt Card
         Card(
             modifier = Modifier

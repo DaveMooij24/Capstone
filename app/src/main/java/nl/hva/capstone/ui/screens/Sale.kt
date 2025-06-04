@@ -48,7 +48,6 @@ fun Sale(navController: NavController, saleViewModel: SaleViewModel
         if (showDialog && selectedSale != null) {
             saleViewModel.fetchSaleInformation(selectedSale!!)
         }
-        Log.e("Sale", saleInformation.toString())
     }
 
     HomePageLayout(
@@ -58,17 +57,17 @@ fun Sale(navController: NavController, saleViewModel: SaleViewModel
             TopBar(
                 title = "Verkoop Overzicht",
                 actions = listOf(
-                    TopBarAction(
-                        icon = Icons.Default.Add,
-                        contentDescription = "Add",
-                        onClick = {
-                            selectedSale = null
-                            showDialog = true
-                        }
-                    ),
-                    TopBarAction(Icons.Filled.Search, "Search") {
-                        navController.navigate("search")
-                    }
+//                    TopBarAction(
+//                        icon = Icons.Default.Add,
+//                        contentDescription = "Add",
+//                        onClick = {
+//                            selectedSale = null
+//                            showDialog = true
+//                        }
+//                    ),
+//                    TopBarAction(Icons.Filled.Search, "Search") {
+//                        navController.navigate("search")
+//                    }
                 )
             )
         }

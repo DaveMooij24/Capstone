@@ -52,12 +52,12 @@ fun Card(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = sale.id.toString(),
+                    text = dateFormatted,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = dateFormatted,
+                    text = sale.clientName,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
