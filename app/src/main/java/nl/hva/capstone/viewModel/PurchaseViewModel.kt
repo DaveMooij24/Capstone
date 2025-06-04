@@ -1,7 +1,6 @@
 package nl.hva.capstone.viewModel
 
 import android.app.Application
-import android.net.Uri
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 import nl.hva.capstone.data.model.Purchase
@@ -45,17 +44,27 @@ class PurchaseViewModel(
 
         viewModelScope.launch {
             try {
-                val existingPurchase = _purchase.value
-                val oldImageUri = existingPurchase?.image
-                val newImageUri = newPurchase.image
+                val imageUriFromDialog = newPurchase.image
 
-                val isImageChanged = oldImageUri != null &&
-                        newImageUri != null &&
-                        oldImageUri != newImageUri
+                val originalPurchaseSnapshot = _purchase.value
+                val originalFirebaseImageUri = originalPurchaseSnapshot?.image
 
-                if (isImageChanged || newImageUri != null) {
+                val isNewImagePicked = imageUriFromDialog != null &&
+                        imageUriFromDialog != originalFirebaseImageUri &&
+                        (imageUriFromDialog.scheme == "content" || imageUriFromDialog.scheme == "file")
+
+                if (isNewImagePicked) {
                     repository.savePurchaseWithImage(newPurchase)
-                    repository.deleteImage(oldImageUri.toString())
+                    if (originalFirebaseImageUri != null && originalFirebaseImageUri.toString()
+                            .isNotEmpty()
+                    ) {
+                        repository.deleteImage(originalFirebaseImageUri.toString())
+                    }
+                } else if (imageUriFromDialog == null && originalFirebaseImageUri != null) {
+                    repository.savePurchase(newPurchase)
+                    if (originalFirebaseImageUri.toString().isNotEmpty()) {
+                        repository.deleteImage(originalFirebaseImageUri.toString())
+                    }
                 } else {
                     repository.savePurchase(newPurchase)
                 }

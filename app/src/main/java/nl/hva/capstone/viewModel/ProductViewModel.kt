@@ -1,8 +1,6 @@
 package nl.hva.capstone.viewModel
 
 import android.app.Application
-import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.launch
 import nl.hva.capstone.data.model.Product
@@ -41,28 +39,34 @@ class ProductViewModel(
         }
     }
 
-    fun saveProductWithImage(newProduct: Product) {
+    fun saveProductWithImage(newProductData: Product) {
         loadingViewModel.enableLoading()
 
         viewModelScope.launch {
             try {
-                val existingProduct = _product.value
-                val oldImageUri = existingProduct?.image
-                val newImageUri = newProduct.image
+                val imageUriFromDialog = newProductData.image
 
-                val isImageChanged = oldImageUri != null &&
-                        newImageUri != null &&
-                        oldImageUri != newImageUri
+                val originalProductSnapshot = _product.value
+                val originalFirebaseImageUri = originalProductSnapshot?.image
 
-                if (newImageUri == null) {
-                    repository.saveProduct(newProduct)
-                } else {
-                    if (isImageChanged) {
-                        repository.saveProductWithImage(newProduct)
-                        repository.deleteImage(oldImageUri.toString())
-                    } else {
-                        repository.saveProduct(newProduct)
+                val isNewImagePicked = imageUriFromDialog != null &&
+                        imageUriFromDialog != originalFirebaseImageUri &&
+                        (imageUriFromDialog.scheme == "content" || imageUriFromDialog.scheme == "file")
+
+                if (isNewImagePicked) {
+                    repository.saveProductWithImage(newProductData)
+                    if (originalFirebaseImageUri != null && originalFirebaseImageUri.toString()
+                            .isNotEmpty()
+                    ) {
+                        repository.deleteImage(originalFirebaseImageUri.toString())
                     }
+                } else if (imageUriFromDialog == null && originalFirebaseImageUri != null) {
+                    repository.saveProduct(newProductData)
+                    if (originalFirebaseImageUri.toString().isNotEmpty()) {
+                        repository.deleteImage(originalFirebaseImageUri.toString())
+                    }
+                } else {
+                    repository.saveProduct(newProductData)
                 }
 
                 _productSaved.value = true
