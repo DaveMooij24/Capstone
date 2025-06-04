@@ -10,10 +10,11 @@ class LoadingViewModel(application: Application) : AndroidViewModel(application)
     val loading: LiveData<Boolean> get() = _loading
 
     fun enableLoading() {
-        _loading.value = true
+        _loading.postValue(true)
     }
 
     fun disableLoading() {
-        _loading.value = false
+        _loading.postValue(false)
+
     }
 }

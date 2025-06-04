@@ -11,10 +11,14 @@ class SaleConverter {
             return try {
                 val id = snapshot.getLong("id") ?: 0L
                 val dateTime = snapshot.getTimestamp("dateTime") ?: Timestamp(0, 0)
+                val clientName = snapshot.getString("clientName") ?: "Onbekend"
+                val nextAppointmentDate = snapshot.getTimestamp("nextAppointmentDate")
 
                 Sale(
                     id = id,
                     dateTime = dateTime,
+                    clientName = clientName,
+                    nextAppointmentDate = nextAppointmentDate
                 )
             } catch (e: Exception) {
                 Log.e("SaleConverter", "Error converting snapshot to Sale: ${e.message}")

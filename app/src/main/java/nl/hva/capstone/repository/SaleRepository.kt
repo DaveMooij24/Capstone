@@ -10,11 +10,7 @@ import nl.hva.capstone.repository.util.*
 class SaleRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val saleCollection = firestore.collection("sale")
-    private val saleProductCollection = firestore.collection("saleProduct")
-    private val saleServiceCollection = firestore.collection("saleService")
-
-    private val productCollection = firestore.collection("products")
-    private val serviceCollection = firestore.collection("services")
+    private val saleProductCollection = firestore.collection("saleInformation")
 
     suspend fun getSales(): List<Sale> {
         val snapshot = saleCollection.get().await()
@@ -29,110 +25,38 @@ class SaleRepository {
             .await()
     }
 
-    suspend fun addSaleProduct(saleProduct: SaleProduct) {
+    suspend fun addSaleInformation(saleInformation: SaleInformation) {
         val docRef = saleProductCollection.document()
-        val newSaleProduct = saleProduct.copy(id = docRef.id)
-        docRef.set(newSaleProduct).await()
+        val newSaleInformation = saleInformation.copy(id = docRef.id)
+        docRef.set(newSaleInformation).await()
     }
 
-    suspend fun addSaleProducts(saleProducts: List<SaleProduct>) {
+    suspend fun addSaleInformation(saleInformationList: List<SaleInformation>) {
         val batch = Firebase.firestore.batch()
 
-        saleProducts.forEach { saleProduct ->
+        saleInformationList.forEach { saleInformation ->
             val docRef = saleProductCollection.document()
-            val newSaleProduct = saleProduct.copy(id = docRef.id)
-            batch.set(docRef, newSaleProduct)
+            val newSaleInformation = saleInformation.copy(id = docRef.id)
+            batch.set(docRef, newSaleInformation)
         }
 
         batch.commit().await()
     }
 
-    suspend fun addSaleService(saleService: SaleService) {
-        val docRef = saleProductCollection.document()
-        val newSaleService = saleService.copy(id = docRef.id)
-        docRef.set(newSaleService).await()
-    }
-
-    suspend fun addSaleServices(saleServices: List<SaleService>) {
-        val batch = Firebase.firestore.batch()
-
-        saleServices.forEach { saleService ->
-            val docRef = saleProductCollection.document()
-            val newSaleService = saleService.copy(id = docRef.id)
-            batch.set(docRef, newSaleService)
-        }
-
-        batch.commit().await()
-    }
-
-    suspend fun getSaleProductsForSale(saleId: Long): List<Product> {
+    suspend fun getSaleInformationForSale(saleId: Long): List<SaleInformation> {
         return try {
+            val collectionLink = saleProductCollection
+                .whereEqualTo("saleId", saleId)
+                .get()
+                .await()
 
-            val collectionLink =
-                saleProductCollection
-                    .whereEqualTo("saleId", saleId)
-                    .get()
-                    .await()
-
-            val productList = mutableListOf<Product>()
-
-            for (linkDoc in collectionLink.documents) {
-                val productIdFromLink = linkDoc.getLong("productId")
-
-                if (productIdFromLink != null) {
-                    val productQuerySnapshot = productCollection
-                        .whereEqualTo("id", productIdFromLink)
-                        .limit(1)
-                        .get()
-                        .await()
-
-                    if (!productQuerySnapshot.isEmpty) {
-                        val actualProductDoc = productQuerySnapshot.documents[0]
-                        ProductConverter.fromSnapshot(actualProductDoc)?.let { product ->
-                            productList.add(product)
-                        }
-                    }
-                }
+            collectionLink.documents.mapNotNull { doc ->
+                SaleInformationConverter.fromSnapshot(saleId, doc)
             }
-            productList
         } catch (e: Exception) {
             emptyList()
         }
     }
 
-    suspend fun getSaleServicesForSale(saleId: Long): List<Service> {
-        return try {
-
-            val collectionLink =
-                saleServiceCollection
-                    .whereEqualTo("saleId", saleId)
-                    .get()
-                    .await()
-
-            val serviceList = mutableListOf<Service>()
-
-            for (linkDoc in collectionLink.documents) {
-                val serviceIdFromLink = linkDoc.getLong("serviceId")
-
-                if (serviceIdFromLink != null) {
-                    val serviceQuerySnapshot = serviceCollection
-                        .whereEqualTo("id", serviceIdFromLink)
-                        .limit(1)
-                        .get()
-                        .await()
-
-                    if (!serviceQuerySnapshot.isEmpty) {
-                        val actualServiceDoc = serviceQuerySnapshot.documents[0]
-                        ServiceConverter.fromSnapshot(actualServiceDoc)?.let { service ->
-                            serviceList.add(service)
-                        }
-                    }
-                }
-            }
-            serviceList
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
 
 }

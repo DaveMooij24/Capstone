@@ -9,6 +9,8 @@ import com.epson.epos2.printer.ReceiveListener
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.*
 import nl.hva.capstone.data.model.Product
+import nl.hva.capstone.data.model.Sale
+import nl.hva.capstone.data.model.SaleInformation
 import nl.hva.capstone.data.model.Service
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,8 +24,7 @@ class PrinterService(private val context: Context) : ReceiveListener {
         printerIp: String,
         clientName: String,
         appointmentDateTime: Date,
-        service: Service,
-        products: List<Product>,
+        saleInformation: List<SaleInformation>,
         nextAppointment: Date?,
         onResult: (Boolean, String) -> Unit
     ) {
@@ -35,7 +36,7 @@ class PrinterService(private val context: Context) : ReceiveListener {
 
             if (initializePrinter()) {
                 if (connectToPrinter(printerIp)) {
-                    val result = buildAndSendReceiptData(clientName, appointmentDateTime, service, products, nextAppointment)
+                    val result = buildAndSendReceiptData(clientName, appointmentDateTime, saleInformation, nextAppointment)
                     disconnectPrinter()
                     onResult(result, if (result) "Print successful!" else "Failed to print.")
                 } else {
@@ -78,8 +79,7 @@ class PrinterService(private val context: Context) : ReceiveListener {
     private suspend fun buildAndSendReceiptData(
         clientName: String,
         appointmentDateTime: Date,
-        service: Service,
-        products: List<Product>,
+        saleInformation: List<SaleInformation>,
         nextAppointment: Date?
     ): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -101,22 +101,34 @@ class PrinterService(private val context: Context) : ReceiveListener {
                 return " $left$spaces$right\n"
             }
 
-            var total = 0.0
-            mPrinter?.addText(formatLine(service.name, "%.2f".format(service.price)))
-            total += service.price!!
+            var totalHigh = 0.0
+            var totalLow = 0.0
 
-            products.forEach {
-                mPrinter?.addText(formatLine(it.name, "%.2f".format(it.salePrice)))
-                total += it.salePrice!!
+            saleInformation.forEach {
+                mPrinter?.addText(formatLine(it.name, "%.2f".format(it.price)))
+                if(it.tax == 9) totalLow += it.price
+                else if (it.tax == 21) totalHigh += it.price
             }
 
-            val tax = total / 109 * 9
+            val taxLow = totalLow / 109 * 9
+            val taxHigh = totalHigh / 121 * 21
+            val taxTotal = totalLow + totalHigh
+
+            val taxLowFormatted = String.format("%.2f", taxLow)
+            val taxHighFormatted = String.format("%.2f", taxHigh)
+            val taxTotalFormatted = String.format("%.2f", taxTotal)
+
+            val total = totalHigh + totalLow
             val totalFormatted = String.format("%.2f", total)
-            val taxFormatted = String.format("%.2f", tax)
 
             mPrinter?.addText("\n")
-            mPrinter?.addText("  BTW 9%     : $taxFormatted\n")
-            mPrinter?.addText("  BTW Totaal : $taxFormatted\n")
+            if(taxLowFormatted != "0,00"){
+                mPrinter?.addText("  BTW 9%     : $taxLowFormatted\n")
+            }
+            if(taxLowFormatted != "0,00"){
+                mPrinter?.addText("  BTW 21%    : $taxHighFormatted\n")
+            }
+            mPrinter?.addText("  BTW Totaal : $taxTotalFormatted\n")
             mPrinter?.addText(formatLine("TOTAAL:", "€ $totalFormatted"))
             mPrinter?.addText("\n")
             mPrinter?.addText(formatLine("Per pin voldaan", totalFormatted))

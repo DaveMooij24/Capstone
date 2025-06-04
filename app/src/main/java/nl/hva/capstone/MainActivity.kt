@@ -76,14 +76,16 @@ class MainActivity : FragmentActivity() {
                                 clientViewModel = clientViewModel,
                                 serviceViewModel = serviceViewModel,
                                 productViewModel = productViewModel,
-                                appointmentProductViewModel = appointmentProductViewModel)
+                                appointmentProductViewModel = appointmentProductViewModel,
+                                saleViewModel = saleViewModel)
                         }
                         composable("actief") { Active(navController = navController, appointmentId = null, clientId = null,
                             appointmentViewModel = appointmentViewModel,
                             clientViewModel = clientViewModel,
                             serviceViewModel = serviceViewModel,
                             productViewModel = productViewModel,
-                            appointmentProductViewModel = appointmentProductViewModel)}
+                            appointmentProductViewModel = appointmentProductViewModel,
+                            saleViewModel = saleViewModel)}
                         composable("agenda") { Agenda(navController = navController, appointmentViewModel = appointmentViewModel, clientViewModel = clientViewModel, serviceViewModel = serviceViewModel) }
                         composable("verkopen") { Sale(navController, saleViewModel = saleViewModel)}
                         composable("inkopen") { Purchases(navController, purchaseViewModel = purchaseViewModel) }

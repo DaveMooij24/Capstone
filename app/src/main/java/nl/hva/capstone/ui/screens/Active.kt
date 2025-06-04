@@ -50,7 +50,8 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
            clientViewModel: ClientViewModel,
            serviceViewModel: ServiceViewModel,
            productViewModel: ProductViewModel,
-           appointmentProductViewModel: AppointmentProductViewModel
+           appointmentProductViewModel: AppointmentProductViewModel,
+           saleViewModel: SaleViewModel
 ) {
     val context = LocalContext.current
 
@@ -136,34 +137,42 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
         currencyFormatter.format(subTotal)
     }
 
-    fun printReceipt(){
+    fun printReceipt(nextAppointment: Appointment?){
         client?.let { client ->
             service.value?.let { service ->
                 val printerService = PrinterService(context)
                 val printerIp = "192.168.1.105"
-
                 val currentDate = Date()
-                val nextAppointment = appointments
-                    .mapNotNull { appointment ->
-                        val date = (appointment.dateTime as? Timestamp)?.toDate()
-                        if (date != null && date.after(currentDate)) {
-                            appointment to date
-                        } else {
-                            null
-                        }
-                    }
-                    .sortedBy { it.second }
-                    .firstOrNull()
-                    ?.first
+
+                val saleInformationList = mutableListOf<SaleInformation>()
+
+                service.let { serv ->
+                    saleInformationList.add(
+                        SaleInformation(
+                            name = serv.name,
+                            price = serv.price ?: 0.0,
+                            tax = serv.taxes ?: 0,
+                        )
+                    )
+                }
+
+                appointmentProducts.forEach { product ->
+                    saleInformationList.add(
+                        SaleInformation(
+                            name = product.name,
+                            price = product.salePrice ?: 0.0,
+                            tax = product.taxes ?: 0,
+                        )
+                    )
+                }
 
                 CoroutineScope(Dispatchers.IO).launch {
                     printerService.printReceipt(
                         printerIp = printerIp,
                         clientName = client.name,
                         appointmentDateTime = currentDate,
-                        service = service,
-                        products = appointmentProducts,
-                        nextAppointment = nextAppointment?.dateTime?.toDate()
+                        nextAppointment = nextAppointment?.dateTime?.toDate(),
+                        saleInformation = saleInformationList
                     ) { success, message ->
                         CoroutineScope(Dispatchers.Main).launch {
                             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -397,14 +406,64 @@ fun Active(navController: NavController, appointmentId: String?, clientId: Strin
                 onConfirm = {
                     showConfirmPrint = false
                     appointment?.let { currentAppointment ->
-                        appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
-//                        printReceipt()
+                        val currentDate = Date()
+
+                        val nextAppointment = appointments
+                            .mapNotNull { appointment ->
+                                val date = (appointment.dateTime as? Timestamp)?.toDate()
+                                if (date != null && date.after(currentDate)) {
+                                    appointment to date
+                                } else {
+                                    null
+                                }
+                            }
+                            .sortedBy { it.second }
+                            .firstOrNull()
+                            ?.first
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            client?.let {
+                                saleViewModel.processAndSaveSale(
+                                    service = service.value,
+                                    products = appointmentProducts,
+                                    clientName = it.name,
+                                    nextAppointment = nextAppointment?.dateTime
+                                )
+                            }
+                            appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
+                            printReceipt(nextAppointment)
+                        }
                     }
                 },
                 onCancel = {
                     showConfirmPrint = false
                     appointment?.let { currentAppointment ->
-                        appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
+                        val currentDate = Date()
+
+                        val nextAppointment = appointments
+                            .mapNotNull { appointment ->
+                                val date = (appointment.dateTime as? Timestamp)?.toDate()
+                                if (date != null && date.after(currentDate)) {
+                                    appointment to date
+                                } else {
+                                    null
+                                }
+                            }
+                            .sortedBy { it.second }
+                            .firstOrNull()
+                            ?.first
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            client?.let {
+                                saleViewModel.processAndSaveSale(
+                                    service = service.value,
+                                    products = appointmentProducts,
+                                    clientName = it.name,
+                                    nextAppointment = nextAppointment?.dateTime
+                                )
+                            }
+                            appointmentViewModel.updateAppointmentCheckoutStatus(currentAppointment.id, true)
+                        }
                     }
                 }
             )
